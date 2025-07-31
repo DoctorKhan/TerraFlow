@@ -1,0 +1,32 @@
+{
+  "name": "terraflow",
+  "version": "1.0.0",
+  "description": "Resonant Sanctuary: The Weaver - An incremental game",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "start": "node src/main.js",
+    "dev": "live-server --port=3000"
+  },
+  "keywords": ["game", "incremental", "sanctuary"],
+  "author": "TerraFlow",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "@types/jest": "^29.5.5"
+  },
+  "dependencies": {
+    "live-server": "^1.2.2"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "testMatch": ["<rootDir>/tests/**/*.test.js"],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/main.js"
+    ]
+  }
+}

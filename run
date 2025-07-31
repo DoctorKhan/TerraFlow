@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# TerraFlow Run Script
+# Usage: ./run [command]
+
+case "$1" in
+    "test")
+        echo "🧪 Running Jest tests..."
+        npm test
+        ;;
+    "test:watch")
+        echo "🔍 Running Jest tests in watch mode..."
+        npm run test:watch
+        ;;
+    "dev")
+        echo "🚀 Starting development server..."
+        npm run dev
+        ;;
+    "console")
+        echo "🌟 Starting TerraFlow console game..."
+        npm start
+        ;;
+    *)
+        echo "🌟 Launching TerraFlow in browser..."
+        if command -v open >/dev/null 2>&1; then
+            # macOS
+            open index.html
+        elif command -v xdg-open >/dev/null 2>&1; then
+            # Linux
+            xdg-open index.html
+        elif command -v start >/dev/null 2>&1; then
+            # Windows
+            start index.html
+        else
+            echo "❌ Could not detect how to open browser on this system"
+            echo "Please open index.html manually in your browser"
+            echo "Or use './run dev' to start a development server"
+        fi
+        ;;
+esac
