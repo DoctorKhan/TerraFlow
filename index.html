@@ -119,18 +119,18 @@
 
         // --- Game State (Incremental Model) ---
         let gameState = {
-            energy: 10,
+            energy: 20,
             energyPerSecond: 0,
-            insight: 0,
+            insight: 5,
             insightPerSecond: 0,
             harmony: 50,
             units: {
-                dreamers: 0,
-                weavers: 0,
+                dreamers: 1,  // Start with 1 dreamer for immediate insight generation
+                weavers: 1,   // Start with 1 weaver for immediate energy generation
             },
             unitCosts: {
-                dreamers: 10,
-                weavers: 10,
+                dreamers: 15,  // Slightly higher since we start with units
+                weavers: 15,
             },
             nodes: {
                 sustenance: 0,
@@ -431,6 +431,11 @@
             console.assert(initialState.insight === 0, "Test 1.2 Failed: Initial insight should be 0.");
             console.assert(initialState.harmony === 50, "Test 1.3 Failed: Initial harmony should be 50.");
 
+            // Test 1.4: Initial energy is displayed in the UI
+            renderUI();
+            const energyText = document.querySelector('#stats-bar .stat-card:nth-child(1) .text-xl').textContent;
+            console.assert(parseFloat(energyText) === 10.0, "Test 1.4 Failed: Initial energy displayed should be 10.0.");
+
             // Test 2: Composting upgrade increases harmony
             const initialHarmony = initialState.harmony;
             gameState.insight = 200; // Ensure we can afford the upgrade
@@ -447,8 +452,9 @@
 
         // --- Initialization ---
         const init = () => {
-            log("Welcome, Weaver. The sanctuary awakens. Resonate with the cosmos.", "success");
-            addSprite('dome', 1); 
+            log("Welcome, Weaver. The sanctuary awakens with your first Dreamer and Weaver.", "success");
+            log("Watch as they generate resources and expand your mystical realm.", "info");
+            addSprite('dome', 1);
             addSprite('crystal_tree', 1);
             advisorBtn.addEventListener('click', getAdvisorInsight);
             seasonalVisionBtn.addEventListener('click', getSeasonalVision);
