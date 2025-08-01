@@ -724,7 +724,13 @@
             draggedUnit: null,
             dragOffsetX: 0,
             dragOffsetY: 0,
-            hoveredUnit: null
+            hoveredUnit: null,
+            originalPosition: null,
+            dragStartTime: 0,
+            totalDragDistance: 0,
+            isValidPlacement: true,
+            placementEffects: [],
+            proximityIndicators: []
         };
 
         let movementTrails = {};
@@ -793,6 +799,9 @@
 
             // TDD: Draw conversational AI units
             drawConversationalUnits();
+
+            // TDD: Draw drag-and-drop visual effects
+            drawDragEffects();
 
             // Ambient light effects
             drawAmbientEffects();
@@ -1350,6 +1359,261 @@
                 }
             }
             return null;
+        };
+
+        // --- TDD: Enhanced Drag-and-Drop System ---
+
+        const getDraggableUnitAtPosition = (x, y) => {
+            // Check all draggable unit types in order of priority (top to bottom)
+            const allDraggableUnits = [
+                ...gameState.conversationalUnits.filter(unit => unit.draggable !== false),
+                ...gameState.intelligentCreatures.filter(unit => unit.draggable !== false),
+                ...gameState.villageGrid.filter(unit => unit.movable === true || unit.draggable === true)
+            ];
+
+            let bestMatch = null;
+            let smallestDistance = Infinity;
+
+            allDraggableUnits.forEach(unit => {
+                const distance = Math.sqrt(
+                    Math.pow(x - unit.x, 2) + Math.pow(y - unit.y, 2)
+                );
+
+                if (distance <= unit.size && distance < smallestDistance) {
+                    smallestDistance = distance;
+                    bestMatch = {
+                        unit: unit,
+                        unitType: getUnitType(unit),
+                        distance: distance
+                    };
+                }
+            });
+
+            return bestMatch;
+        };
+
+        const getUnitType = (unit) => {
+            if (gameState.conversationalUnits.includes(unit)) return 'conversational';
+            if (gameState.intelligentCreatures.includes(unit)) return 'intelligent';
+            if (gameState.villageGrid.includes(unit)) return 'village';
+            return 'unknown';
+        };
+
+        const validateUnitPlacement = (unit, canvasBounds) => {
+            // Check canvas boundaries
+            if (unit.x < unit.size || unit.x > canvasBounds.width - unit.size ||
+                unit.y < unit.size || unit.y > canvasBounds.height - unit.size) {
+                return false;
+            }
+
+            // Check for overlaps with non-draggable units (like domes)
+            const nonDraggableUnits = gameState.villageGrid.filter(u => u.draggable === false && u.movable !== true);
+            for (let otherUnit of nonDraggableUnits) {
+                const distance = Math.sqrt(
+                    Math.pow(unit.x - otherUnit.x, 2) + Math.pow(unit.y - otherUnit.y, 2)
+                );
+                if (distance < (unit.size + otherUnit.size) * 0.7) { // 70% overlap threshold
+                    return false;
+                }
+            }
+
+            return true;
+        };
+
+        const calculatePlacementEffects = (unit) => {
+            const effects = [];
+
+            // Get all units for proximity calculations
+            const allUnits = [
+                ...gameState.villageGrid,
+                ...gameState.intelligentCreatures,
+                ...gameState.conversationalUnits
+            ];
+
+            // Check for proximity bonuses
+            const nearbyUnits = allUnits.filter(otherUnit => {
+                if (otherUnit.id === unit.id) return false;
+                const distance = Math.sqrt(
+                    Math.pow(unit.x - otherUnit.x, 2) + Math.pow(unit.y - otherUnit.y, 2)
+                );
+                return distance <= 80; // Proximity threshold
+            });
+
+            if (nearbyUnits.length > 0) {
+                effects.push({
+                    type: 'proximity_bonus',
+                    description: `Near ${nearbyUnits.length} other units`,
+                    bonus: nearbyUnits.length * 0.1,
+                    nearbyUnits: nearbyUnits
+                });
+            }
+
+            // Check for strategic positions (energy-rich areas)
+            if (unit.x > canvas.width * 0.6 && unit.y > canvas.height * 0.5) {
+                effects.push({
+                    type: 'strategic_position',
+                    description: 'Positioned in energy-rich area',
+                    bonus: 0.15
+                });
+            }
+
+            return effects;
+        };
+
+        const getProximityIndicators = (draggedUnit, proximityRadius = 80) => {
+            const indicators = [];
+            const allUnits = [
+                ...gameState.villageGrid,
+                ...gameState.intelligentCreatures,
+                ...gameState.conversationalUnits
+            ];
+
+            allUnits.forEach(unit => {
+                if (unit.id === draggedUnit.id) return;
+
+                const distance = Math.sqrt(
+                    Math.pow(draggedUnit.x - unit.x, 2) +
+                    Math.pow(draggedUnit.y - unit.y, 2)
+                );
+
+                if (distance <= proximityRadius) {
+                    indicators.push({
+                        type: 'proximity_indicator',
+                        targetUnit: unit,
+                        distance: distance,
+                        strength: 1 - (distance / proximityRadius),
+                        interactionType: determineInteractionType(draggedUnit, unit)
+                    });
+                }
+            });
+
+            return indicators;
+        };
+
+        // --- TDD: Drag-and-Drop Visual Effects ---
+
+        const drawDragEffects = () => {
+            if (!dragState.isDragging || !dragState.draggedUnit) return;
+
+            const unit = dragState.draggedUnit;
+
+            // Draw drag trail
+            if (dragState.originalPosition && dragState.totalDragDistance > 20) {
+                drawDragTrail(dragState.originalPosition, { x: unit.x, y: unit.y });
+            }
+
+            // Draw placement preview
+            drawPlacementPreview(unit);
+
+            // Draw proximity indicators
+            drawProximityIndicators(dragState.proximityIndicators);
+
+            // Draw placement validation
+            drawPlacementValidation(unit, dragState.isValidPlacement);
+        };
+
+        const drawDragTrail = (from, to) => {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(139, 92, 246, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.shadowColor = 'rgba(139, 92, 246, 0.3)';
+            ctx.shadowBlur = 10;
+
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+
+            ctx.restore();
+        };
+
+        const drawPlacementPreview = (unit) => {
+            ctx.save();
+            ctx.strokeStyle = dragState.isValidPlacement ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.shadowColor = dragState.isValidPlacement ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+            ctx.shadowBlur = 15;
+
+            ctx.beginPath();
+            ctx.arc(unit.x, unit.y, unit.size + 10, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw placement effects indicators
+            if (dragState.placementEffects.length > 0) {
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.1)';
+                ctx.fill();
+
+                // Draw effect icons
+                dragState.placementEffects.forEach((effect, index) => {
+                    const angle = (index * Math.PI * 2) / dragState.placementEffects.length;
+                    const iconX = unit.x + Math.cos(angle) * (unit.size + 20);
+                    const iconY = unit.y + Math.sin(angle) * (unit.size + 20);
+
+                    ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+
+                    if (effect.type === 'proximity_bonus') {
+                        ctx.fillText('👥', iconX, iconY);
+                    } else if (effect.type === 'strategic_position') {
+                        ctx.fillText('⭐', iconX, iconY);
+                    }
+                });
+            }
+
+            ctx.restore();
+        };
+
+        const drawProximityIndicators = (indicators) => {
+            indicators.forEach(indicator => {
+                const targetUnit = indicator.targetUnit;
+                const strength = indicator.strength;
+
+                ctx.save();
+                ctx.strokeStyle = `rgba(251, 191, 36, ${strength * 0.6})`;
+                ctx.lineWidth = Math.max(1, strength * 3);
+                ctx.setLineDash([3, 3]);
+
+                ctx.beginPath();
+                ctx.moveTo(dragState.draggedUnit.x, dragState.draggedUnit.y);
+                ctx.lineTo(targetUnit.x, targetUnit.y);
+                ctx.stroke();
+
+                // Draw interaction type indicator
+                const midX = (dragState.draggedUnit.x + targetUnit.x) / 2;
+                const midY = (dragState.draggedUnit.y + targetUnit.y) / 2;
+
+                ctx.fillStyle = `rgba(251, 191, 36, ${strength * 0.8})`;
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+
+                let icon = '✨';
+                if (indicator.interactionType === 'inspiration') icon = '💡';
+                else if (indicator.interactionType === 'creative_collaboration') icon = '🎨';
+                else if (indicator.interactionType === 'knowledge_sharing') icon = '📚';
+
+                ctx.fillText(icon, midX, midY);
+
+                ctx.restore();
+            });
+        };
+
+        const drawPlacementValidation = (unit, isValid) => {
+            if (!isValid) {
+                // Draw warning indicators for invalid placement
+                ctx.save();
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 5;
+
+                ctx.fillText('⚠️', unit.x, unit.y - unit.size - 20);
+
+                ctx.restore();
+            }
         };
 
         const getCanvasCoordinates = (event) => {
@@ -1943,7 +2207,9 @@
                 vx: 0,
                 vy: 0,
                 animationOffset: Math.random() * Math.PI * 2,
-                relationships: new Map()
+                relationships: new Map(),
+                draggable: true, // TDD: Enable drag-and-drop
+                isDragging: false
             };
 
             // Initialize based on creature type
@@ -2755,7 +3021,9 @@
                 playerRelationship: 0.1,
                 animationOffset: Math.random() * Math.PI * 2,
                 thoughtTimer: 0,
-                nextThoughtTime: 5000 + Math.random() * 10000
+                nextThoughtTime: 5000 + Math.random() * 10000,
+                draggable: true, // TDD: Enable drag-and-drop
+                isDragging: false
             };
 
             // Initialize based on unit type
@@ -4009,21 +4277,33 @@
                 }
             });
 
-            // TDD Task 1: Mouse event listeners for drag-and-drop
+            // TDD: Enhanced Mouse event listeners for drag-and-drop
             canvas.addEventListener('mousedown', (e) => {
                 const coords = getCanvasCoordinates(e);
-                const unit = getUnitAtPosition(coords.x, coords.y);
+                const result = getDraggableUnitAtPosition(coords.x, coords.y);
 
-                if (unit && unit.movable) {
+                if (result && result.unit) {
+                    const unit = result.unit;
+
+                    // Initialize drag state
                     dragState.isDragging = true;
                     dragState.draggedUnit = unit;
                     dragState.dragOffsetX = coords.x - unit.x;
                     dragState.dragOffsetY = coords.y - unit.y;
+                    dragState.originalPosition = { x: unit.x, y: unit.y };
+                    dragState.dragStartTime = Date.now();
+                    dragState.totalDragDistance = 0;
 
-                    // Stop auto-wandering while dragging
-                    unit.wanderCenter = { x: unit.x, y: unit.y };
+                    // Visual feedback
+                    unit.isDragging = true;
+
+                    // Stop auto-wandering while dragging (for village units)
+                    if (unit.wanderCenter) {
+                        unit.wanderCenter = { x: unit.x, y: unit.y };
+                    }
 
                     canvas.style.cursor = 'grabbing';
+                    log(`Started dragging ${unit.type}`, 'info');
                 }
             });
 
@@ -4031,51 +4311,117 @@
                 const coords = getCanvasCoordinates(e);
 
                 if (dragState.isDragging && dragState.draggedUnit) {
-                    // Update dragged unit position
-                    dragState.draggedUnit.targetX = coords.x - dragState.dragOffsetX;
-                    dragState.draggedUnit.targetY = coords.y - dragState.dragOffsetY;
+                    const unit = dragState.draggedUnit;
+                    const oldX = unit.x;
+                    const oldY = unit.y;
 
-                    // Keep within canvas bounds
-                    dragState.draggedUnit.targetX = Math.max(50, Math.min(canvas.width - 50, dragState.draggedUnit.targetX));
-                    dragState.draggedUnit.targetY = Math.max(50, Math.min(canvas.height - 50, dragState.draggedUnit.targetY));
+                    // Calculate new position
+                    const newX = coords.x - dragState.dragOffsetX;
+                    const newY = coords.y - dragState.dragOffsetY;
+
+                    // Apply canvas boundaries
+                    const constrainedX = Math.max(unit.size, Math.min(canvas.width - unit.size, newX));
+                    const constrainedY = Math.max(unit.size, Math.min(canvas.height - unit.size, newY));
+
+                    // Update unit position
+                    unit.x = constrainedX;
+                    unit.y = constrainedY;
+
+                    // For village units, also update targetX/targetY
+                    if (unit.targetX !== undefined) {
+                        unit.targetX = constrainedX;
+                        unit.targetY = constrainedY;
+                    }
+
+                    // Calculate drag distance
+                    const deltaX = constrainedX - oldX;
+                    const deltaY = constrainedY - oldY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    dragState.totalDragDistance += distance;
+
+                    // Validate placement and calculate effects
+                    dragState.isValidPlacement = validateUnitPlacement(unit, { width: canvas.width, height: canvas.height });
+                    dragState.placementEffects = calculatePlacementEffects(unit);
+
+                    // Calculate proximity indicators
+                    dragState.proximityIndicators = getProximityIndicators(unit);
+
                 } else {
                     // Update hover state
-                    const unit = getUnitAtPosition(coords.x, coords.y);
-                    dragState.hoveredUnit = unit;
+                    const result = getDraggableUnitAtPosition(coords.x, coords.y);
+                    dragState.hoveredUnit = result ? result.unit : null;
 
-                    if (unit && unit.movable) {
+                    if (result && result.unit) {
                         canvas.style.cursor = 'grab';
                     } else {
-                        canvas.style.cursor = 'default';
+                        // Check for conversational units for chat
+                        const conversationalUnit = getConversationalUnitAtPosition(coords.x, coords.y);
+                        canvas.style.cursor = conversationalUnit ? 'pointer' : 'default';
                     }
                 }
             });
 
             canvas.addEventListener('mouseup', (e) => {
                 if (dragState.isDragging && dragState.draggedUnit) {
-                    // Update wander center to new position
-                    dragState.draggedUnit.wanderCenter = {
-                        x: dragState.draggedUnit.x,
-                        y: dragState.draggedUnit.y
-                    };
+                    const unit = dragState.draggedUnit;
+                    const dragDuration = Date.now() - dragState.dragStartTime;
 
-                    log(`Moved ${dragState.draggedUnit.type} to new location`, 'info');
+                    // Validate final placement
+                    if (dragState.isValidPlacement) {
+                        // Successful placement
+                        if (unit.wanderCenter) {
+                            unit.wanderCenter = { x: unit.x, y: unit.y };
+                        }
+
+                        // Apply placement effects
+                        if (dragState.placementEffects.length > 0) {
+                            dragState.placementEffects.forEach(effect => {
+                                if (effect.type === 'proximity_bonus') {
+                                    log(`${unit.type} gains proximity bonus from ${effect.nearbyUnits.length} nearby units!`, 'success');
+                                } else if (effect.type === 'strategic_position') {
+                                    log(`${unit.type} positioned strategically for enhanced performance!`, 'success');
+                                }
+                            });
+                        }
+
+                        log(`Moved ${unit.type} to new location (${dragState.totalDragDistance.toFixed(0)}px in ${(dragDuration/1000).toFixed(1)}s)`, 'info');
+                    } else {
+                        // Invalid placement - revert to original position
+                        unit.x = dragState.originalPosition.x;
+                        unit.y = dragState.originalPosition.y;
+                        if (unit.targetX !== undefined) {
+                            unit.targetX = unit.x;
+                            unit.targetY = unit.y;
+                        }
+                        if (unit.wanderCenter) {
+                            unit.wanderCenter = { x: unit.x, y: unit.y };
+                        }
+                        log(`Invalid placement! ${unit.type} returned to original position.`, 'warning');
+                    }
+
+                    // Clean up drag state
+                    unit.isDragging = false;
                 } else {
-                    // Check for conversational unit clicks
+                    // Check for conversational unit clicks (only if not dragging)
                     const coords = getCanvasCoordinates(e);
                     const conversationalUnit = getConversationalUnitAtPosition(coords.x, coords.y);
 
-                    if (conversationalUnit) {
+                    if (conversationalUnit && !conversationalUnit.isDragging) {
                         selectedConversationalUnit = conversationalUnit;
                         createConversationDialog(conversationalUnit);
                         log(`Started conversation with ${conversationalUnit.type}`, 'info');
                     }
                 }
 
+                // Reset drag state
                 dragState.isDragging = false;
                 dragState.draggedUnit = null;
                 dragState.dragOffsetX = 0;
                 dragState.dragOffsetY = 0;
+                dragState.originalPosition = null;
+                dragState.totalDragDistance = 0;
+                dragState.placementEffects = [];
+                dragState.proximityIndicators = [];
                 canvas.style.cursor = 'default';
             });
 
