@@ -550,6 +550,25 @@
 
         <!-- Center Panel: Village View & Compact Stats -->
         <main class="flex-1 flex flex-col p-3">
+            <!-- Player Switch Controls -->
+            <div id="player-controls" class="mb-2">
+                <div class="flex items-center justify-center bg-gray-800 rounded-lg p-2 border border-gray-600 space-x-3">
+                    <div class="text-xs text-gray-400">Active Player:</div>
+                    <button id="gardener-player-btn" class="px-3 py-1 text-xs rounded transition-all bg-green-700 text-green-200 border border-green-600 hover:bg-green-600">
+                        🌱 Gardener
+                    </button>
+                    <button id="ruler-player-btn" class="px-3 py-1 text-xs rounded transition-all bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600">
+                        🏛️ Ruler
+                    </button>
+                    <button id="alliance-mode-btn" class="px-3 py-1 text-xs rounded transition-all bg-purple-700 text-purple-200 border border-purple-600 hover:bg-purple-600" style="display: none;">
+                        🤝 Alliance Mode
+                    </button>
+                    <div id="current-player-indicator" class="text-xs font-bold text-green-400">
+                        🌱 Gardener's Turn
+                    </div>
+                </div>
+            </div>
+
             <!-- Compact Horizontal Stats Bar -->
             <div id="stats-bar" class="mb-2">
                 <div class="flex items-center justify-between bg-gray-900 rounded-lg p-2 border border-gray-700">
@@ -584,6 +603,22 @@
                             <div class="w-16 bg-gray-700 rounded-full h-1 mt-1">
                                 <div class="bg-yellow-400 h-1 rounded-full transition-all duration-300" style="width: 10%"></div>
                             </div>
+                        </div>
+
+                        <!-- Alliance Status -->
+                        <div id="alliance-status" class="stat-compact tooltip" data-tooltip="Alliance Integration - Unity of Rulers and Gardeners" style="display: none;">
+                            <span class="text-purple-400 font-bold text-xl" id="integration-level">0%</span>
+                            <span class="text-xs text-gray-300">🤝 Alliance</span>
+                            <div class="w-16 bg-gray-700 rounded-full h-1 mt-1">
+                                <div id="integration-bar" class="bg-purple-400 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- AI Player Status -->
+                        <div id="ai-status" class="stat-compact tooltip" data-tooltip="AI Ruler Player - Your potential ally">
+                            <span class="text-orange-400 font-bold text-lg" id="ai-control">10</span>
+                            <span class="text-xs text-gray-300">🏛️ AI Ruler</span>
+                            <div class="text-xs text-orange-300" id="ai-buildings">0 Buildings</div>
                         </div>
                     </div>
 
@@ -1017,6 +1052,37 @@
             gardenerPathProgress: 0, // Progress toward Gardener victory
             dominantPath: 'none', // 'ruler', 'gardener', or 'balanced'
 
+            // TDD: Integration & Alliance System
+            allianceFormed: false, // Whether Gardeners and Rulers have allied
+            integrationLevel: 0, // 0-100, how well the paths work together
+            externalThreatLevel: 0, // Cosmic threats that force cooperation
+            cosmicThreatActive: false, // Major external enemy present
+
+            // TDD: AI Player Simulation
+            currentPlayer: 'gardener', // 'gardener' or 'ruler' - who's currently active
+            aiPlayer: {
+                faction: 'ruler', // AI plays as ruler by default
+                lastAction: 0, // Timestamp of last AI action
+                actionCooldown: 15000, // 15 seconds between AI actions
+                strategy: 'balanced', // 'aggressive', 'defensive', 'balanced'
+                resources: { // AI has separate resource pool
+                    energy: 50,
+                    insight: 30,
+                    wisdom: 0,
+                    control: 10
+                },
+                buildings: {}, // AI's buildings (separate from player)
+                units: [] // AI's units
+            },
+            aiEnabled: true, // Whether AI opponent is active
+
+            // TDD: Communication & Diplomacy System
+            allianceOffered: false, // Whether alliance has been offered
+            diplomaticContact: false, // Whether other faction has been contacted
+            communicationChannels: [], // Active communication methods
+            otherFactionPresent: false, // Whether other faction exists on adjacent map
+            mapExpanded: false, // Whether map has been expanded for alliance
+
             // TDD: Four Horsemen Crisis System
             crisisLevel: 0, // 0-100, triggers horsemen at certain thresholds
             activeCrises: [], // Array of active crisis objects
@@ -1436,6 +1502,29 @@
                 progressBar.style.width = `${percentage}%`;
             }
 
+            // Update alliance status
+            const allianceStatusEl = document.getElementById('alliance-status');
+            const integrationLevelEl = document.getElementById('integration-level');
+            const integrationBarEl = document.getElementById('integration-bar');
+
+            if (gameState.allianceFormed) {
+                if (allianceStatusEl) allianceStatusEl.style.display = 'block';
+                if (integrationLevelEl) integrationLevelEl.textContent = `${Math.round(gameState.integrationLevel)}%`;
+                if (integrationBarEl) integrationBarEl.style.width = `${gameState.integrationLevel}%`;
+            } else {
+                if (allianceStatusEl) allianceStatusEl.style.display = 'none';
+            }
+
+            // Update AI player status
+            const aiControlEl = document.getElementById('ai-control');
+            const aiBuildingsEl = document.getElementById('ai-buildings');
+
+            if (aiControlEl) aiControlEl.textContent = Math.round(gameState.aiPlayer.resources.control);
+            if (aiBuildingsEl) {
+                const totalAIBuildings = Object.values(gameState.aiPlayer.buildings).reduce((sum, count) => sum + count, 0);
+                aiBuildingsEl.textContent = `${totalAIBuildings} Buildings`;
+            }
+
             // Handle harmony separately (no formatting, just fixed decimal)
             if (harmonyEl) {
                 const oldHarmony = previousValues.harmony;
@@ -1784,9 +1873,12 @@
                 checkStoryProgression();
             }
 
-            // TDD: Update crisis system
+            // TDD: Update crisis system and alliance mechanics
             if (Math.random() < 0.05) { // Check every ~20 frames
                 updateCrisisLevel();
+                updateAIPlayer(); // AI opponent actions
+                checkAllianceFormation();
+                updateIntegrationLevel();
                 checkForNewCrises();
                 checkCrisisResolution();
             }
@@ -2259,10 +2351,16 @@
             const scaleY = minimapHeight / canvasState.height;
             const scale = Math.min(scaleX, scaleY);
 
+            // Calculate centering offsets
+            const actualMinimapWidth = canvasState.width * scale;
+            const actualMinimapHeight = canvasState.height * scale;
+            const offsetX = (minimapWidth - actualMinimapWidth) / 2;
+            const offsetY = (minimapHeight - actualMinimapHeight) / 2;
+
             // Draw units on minimap
             gameState.villageGrid.forEach(unit => {
-                const x = unit.x * scale;
-                const y = unit.y * scale;
+                const x = offsetX + unit.x * scale;
+                const y = offsetY + unit.y * scale;
 
                 minimapCtx.fillStyle = getUnitMinimapColor(unit.type);
                 minimapCtx.fillRect(x - 1, y - 1, 2, 2);
@@ -2277,8 +2375,8 @@
             minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             minimapCtx.lineWidth = 1;
             minimapCtx.strokeRect(
-                viewLeft * scale,
-                viewTop * scale,
+                offsetX + viewLeft * scale,
+                offsetY + viewTop * scale,
                 viewWidth * scale,
                 viewHeight * scale
             );
@@ -2311,14 +2409,30 @@
                 const clickX = e.clientX - rect.left;
                 const clickY = e.clientY - rect.top;
 
-                // Calculate scale
-                const scaleX = minimapCanvas.width / canvasState.width;
-                const scaleY = minimapCanvas.height / canvasState.height;
+                // Calculate scale (same as drawing)
+                const minimapWidth = minimapCanvas.width;
+                const minimapHeight = minimapCanvas.height;
+                const scaleX = minimapWidth / canvasState.width;
+                const scaleY = minimapHeight / canvasState.height;
                 const scale = Math.min(scaleX, scaleY);
 
+                // Calculate the actual minimap area (centered in canvas)
+                const actualMinimapWidth = canvasState.width * scale;
+                const actualMinimapHeight = canvasState.height * scale;
+                const offsetX = (minimapWidth - actualMinimapWidth) / 2;
+                const offsetY = (minimapHeight - actualMinimapHeight) / 2;
+
+                // Check if click is within the actual minimap area
+                const relativeX = clickX - offsetX;
+                const relativeY = clickY - offsetY;
+
+                if (relativeX < 0 || relativeY < 0 || relativeX > actualMinimapWidth || relativeY > actualMinimapHeight) {
+                    return; // Click outside minimap area
+                }
+
                 // Convert minimap coordinates to world coordinates
-                const worldX = clickX / scale;
-                const worldY = clickY / scale;
+                const worldX = relativeX / scale;
+                const worldY = relativeY / scale;
 
                 // Center the view on the clicked location
                 canvasState.panX = -(worldX - canvasState.width / (2 * canvasState.zoom));
@@ -2490,7 +2604,9 @@
                     vy: 0,
                     wanderCenter: { x: x, y: y },
                     wanderPhase: Math.random() * Math.PI * 2,
-                    wanderRadius: 30 + Math.random() * 20
+                    wanderRadius: 30 + Math.random() * 20,
+                    // Player ownership for multiplayer
+                    owner: gameState.currentPlayer === 'alliance' ? 'shared' : gameState.currentPlayer
                 };
 
                 gameState.villageGrid.push(sprite);
@@ -3486,6 +3602,12 @@
         // --- TDD: Building Construction Functions ---
 
         const buildRulerBuilding = (buildingKey) => {
+            // Check if current player can build ruler buildings
+            if (!canPlayerAct('ruler')) {
+                log('🏛️ Only the Ruler player can build Ruler structures!', 'warning');
+                return false;
+            }
+
             const building = rulerPathBuildings[buildingKey];
             if (!building) return false;
 
@@ -3604,6 +3726,12 @@
         };
 
         const buildGardenerBuilding = (buildingKey) => {
+            // Check if current player can build gardener buildings
+            if (!canPlayerAct('gardener')) {
+                log('🌱 Only the Gardener player can build Gardener structures!', 'warning');
+                return false;
+            }
+
             const building = gardenerPathBuildings[buildingKey];
             if (!building) return false;
 
@@ -3955,6 +4083,27 @@
             ctx.globalAlpha = alpha;
             ctx.translate(unit.x, unit.y);
             ctx.scale(scale, scale);
+
+            // Draw player ownership indicator
+            if (unit.owner && unit.owner !== 'shared') {
+                const ownerColor = unit.owner === 'gardener' ? '#10B981' : '#F59E0B';
+                const ownerIcon = unit.owner === 'gardener' ? '🌱' : '🏛️';
+
+                // Draw ownership ring
+                ctx.strokeStyle = ownerColor;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.arc(0, 0, unit.size + 8, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw small ownership icon
+                ctx.font = '12px Arial';
+                ctx.fillStyle = ownerColor;
+                ctx.textAlign = 'center';
+                ctx.fillText(ownerIcon, unit.size + 15, -unit.size - 10);
+            }
 
             // Draw unit based on type with distinct designs
             if (unit.type === 'dreamer') {
@@ -7050,6 +7199,322 @@
             }
         };
 
+        // --- TDD: Cosmic Threat System (External Enemies) ---
+
+        const cosmicThreatConfig = {
+            voidDevourers: {
+                name: "Void Devourers",
+                description: "Ancient entities from beyond reality consume consciousness itself. Only unified wisdom can repel them.",
+                effects: { consciousness: -30, planetaryConsciousness: -25, harmony: -20 },
+                duration: 300000, // 5 minutes
+                triggerLevel: 70, // High integration needed to trigger
+                icon: '🌑',
+                color: '#000000',
+                requiresAlliance: true
+            },
+            stellarTyrants: {
+                name: "Stellar Tyrants",
+                description: "Galactic empire seeks to enslave the sanctuary. Requires both wisdom and strength to resist.",
+                effects: { control: -25, energy: -30, insight: -20 },
+                duration: 360000, // 6 minutes
+                triggerLevel: 80,
+                icon: '👑',
+                color: '#7C2D12',
+                requiresAlliance: true
+            },
+            entropyStorm: {
+                name: "Entropy Storm",
+                description: "Cosmic chaos threatens to unravel reality. Perfect balance of order and consciousness needed.",
+                effects: { entropy: 50, harmony: -40, planetaryConsciousness: -30 },
+                duration: 420000, // 7 minutes
+                triggerLevel: 90,
+                icon: '🌪️',
+                color: '#581C87',
+                requiresAlliance: true
+            }
+        };
+
+        // --- TDD: Alliance & Integration System ---
+
+        const checkAllianceFormation = () => {
+            if (gameState.allianceFormed) return;
+
+            // Alliance forms when both player and AI have significant progress
+            const playerGardenerProgress = Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0);
+            const aiRulerProgress = Object.values(gameState.aiPlayer.buildings).reduce((sum, count) => sum + count, 0);
+
+            // Need at least 3 buildings from each faction and sufficient resources
+            if (playerGardenerProgress >= 3 && aiRulerProgress >= 3 &&
+                gameState.consciousness >= 40 && gameState.aiPlayer.resources.control >= 30) {
+
+                formAlliance();
+            }
+        };
+
+        const formAlliance = () => {
+            gameState.allianceFormed = true;
+            gameState.integrationLevel = 25; // Start with basic integration
+
+            log('🤝 THE GREAT ALLIANCE FORMS!', 'success');
+            log('═══════════════════════════════════════', 'info');
+            log('🏛️ The Rulers offer their strength and organization.', 'warning');
+            log('🌱 The Gardeners share their wisdom and consciousness.', 'success');
+            log('⚡ Together, you face the cosmic threats that no single path could overcome.', 'info');
+            log('🌟 Integration Level: 25% - The alliance is fragile but growing.', 'grok');
+            log('═══════════════════════════════════════', 'info');
+
+            // Unlock cosmic threat monitoring
+            gameState.cosmicThreatActive = true;
+
+            // Enable alliance mode
+            const allianceModeBtn = document.getElementById('alliance-mode-btn');
+            if (allianceModeBtn) allianceModeBtn.style.display = 'inline-block';
+        };
+
+        // --- TDD: Shared Screen Multiplayer System ---
+
+        const switchPlayer = (newPlayer) => {
+            if (gameState.allianceFormed && newPlayer === 'alliance') {
+                gameState.currentPlayer = 'alliance';
+                updatePlayerUI();
+                log('🤝 Alliance Mode: Both players can act simultaneously!', 'info');
+                return;
+            }
+
+            if (newPlayer !== gameState.currentPlayer) {
+                gameState.currentPlayer = newPlayer;
+                updatePlayerUI();
+
+                const playerName = newPlayer === 'gardener' ? 'Gardener' : 'Ruler';
+                const icon = newPlayer === 'gardener' ? '🌱' : '🏛️';
+                log(`${icon} ${playerName} player is now active`, 'info');
+            }
+        };
+
+        const updatePlayerUI = () => {
+            const gardenerBtn = document.getElementById('gardener-player-btn');
+            const rulerBtn = document.getElementById('ruler-player-btn');
+            const allianceBtn = document.getElementById('alliance-mode-btn');
+            const indicator = document.getElementById('current-player-indicator');
+
+            // Reset button styles
+            if (gardenerBtn) {
+                gardenerBtn.className = 'px-3 py-1 text-xs rounded transition-all bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600';
+            }
+            if (rulerBtn) {
+                rulerBtn.className = 'px-3 py-1 text-xs rounded transition-all bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600';
+            }
+            if (allianceBtn) {
+                allianceBtn.className = 'px-3 py-1 text-xs rounded transition-all bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600';
+            }
+
+            // Highlight active player
+            if (gameState.currentPlayer === 'gardener' && gardenerBtn) {
+                gardenerBtn.className = 'px-3 py-1 text-xs rounded transition-all bg-green-700 text-green-200 border border-green-600 hover:bg-green-600';
+                if (indicator) indicator.innerHTML = '🌱 Gardener\'s Turn';
+            } else if (gameState.currentPlayer === 'ruler' && rulerBtn) {
+                rulerBtn.className = 'px-3 py-1 text-xs rounded transition-all bg-orange-700 text-orange-200 border border-orange-600 hover:bg-orange-600';
+                if (indicator) indicator.innerHTML = '🏛️ Ruler\'s Turn';
+            } else if (gameState.currentPlayer === 'alliance' && allianceBtn) {
+                allianceBtn.className = 'px-3 py-1 text-xs rounded transition-all bg-purple-700 text-purple-200 border border-purple-600 hover:bg-purple-600';
+                if (indicator) indicator.innerHTML = '🤝 Alliance Mode';
+            }
+        };
+
+        const canPlayerAct = (actionType) => {
+            // In alliance mode, both players can act
+            if (gameState.currentPlayer === 'alliance') return true;
+
+            // Check if action is appropriate for current player
+            if (actionType === 'gardener' && gameState.currentPlayer === 'gardener') return true;
+            if (actionType === 'ruler' && gameState.currentPlayer === 'ruler') return true;
+            if (actionType === 'neutral') return true; // Neutral actions like moving units
+
+            return false;
+        };
+
+        // --- TDD: AI Player System ---
+
+        const updateAIPlayer = () => {
+            if (!gameState.aiEnabled || gameState.allianceFormed) return;
+
+            const now = Date.now();
+            if (now - gameState.aiPlayer.lastAction < gameState.aiPlayer.actionCooldown) return;
+
+            // AI resource generation (slower than player)
+            gameState.aiPlayer.resources.energy += 2;
+            gameState.aiPlayer.resources.insight += 1;
+            gameState.aiPlayer.resources.control += 0.5;
+
+            // AI decision making
+            makeAIDecision();
+            gameState.aiPlayer.lastAction = now;
+        };
+
+        const makeAIDecision = () => {
+            const ai = gameState.aiPlayer;
+
+            // Prioritize based on current situation
+            const decisions = [];
+
+            // Check if AI can build ruler buildings
+            for (const [key, building] of Object.entries(rulerPathBuildings)) {
+                if (ai.resources[building.costResource] >= building.cost) {
+                    if (!building.unlockCondition || building.unlockCondition()) {
+                        decisions.push({
+                            type: 'build',
+                            building: key,
+                            priority: calculateBuildingPriority(building, ai.strategy)
+                        });
+                    }
+                }
+            }
+
+            // Check if AI should create units
+            if (ai.resources.energy >= 20) {
+                decisions.push({
+                    type: 'unit',
+                    unitType: 'dreamer',
+                    priority: 3
+                });
+            }
+            if (ai.resources.insight >= 20) {
+                decisions.push({
+                    type: 'unit',
+                    unitType: 'weaver',
+                    priority: 3
+                });
+            }
+
+            // Execute highest priority decision
+            if (decisions.length > 0) {
+                decisions.sort((a, b) => b.priority - a.priority);
+                executeAIDecision(decisions[0]);
+            }
+        };
+
+        const calculateBuildingPriority = (building, strategy) => {
+            let priority = 1;
+
+            // Base priority on building tier
+            if (building.tier) priority += building.tier;
+
+            // Strategy modifiers
+            if (strategy === 'aggressive') {
+                if (building.effects.control) priority += 2;
+                if (building.effects.energy) priority += 1;
+            } else if (strategy === 'defensive') {
+                if (building.effects.harmony) priority += 2;
+                if (building.effects.consciousness) priority += 1;
+            }
+
+            // Crisis response
+            if (gameState.activeCrises.length > 0) {
+                priority += 3; // Prioritize building during crises
+            }
+
+            return priority;
+        };
+
+        const executeAIDecision = (decision) => {
+            const ai = gameState.aiPlayer;
+
+            if (decision.type === 'build') {
+                const building = rulerPathBuildings[decision.building];
+                if (ai.resources[building.costResource] >= building.cost) {
+                    ai.resources[building.costResource] -= building.cost;
+
+                    // Track AI buildings separately
+                    if (!ai.buildings[decision.building]) ai.buildings[decision.building] = 0;
+                    ai.buildings[decision.building]++;
+
+                    // Apply effects to global state (AI affects the world)
+                    applyBuildingEffects(building.effects);
+
+                    // Update global ruler buildings for alliance calculation
+                    gameState.rulerBuildings[decision.building] = (gameState.rulerBuildings[decision.building] || 0) + 1;
+
+                    log(`🏛️ AI Ruler built ${building.name}! The path of control strengthens.`, 'warning');
+
+                    // AI communication based on building type
+                    if (building.tier >= 3) {
+                        log(`🏛️ "Our empire grows stronger. Perhaps cooperation would benefit us both?" - AI Ruler`, 'grok');
+                    }
+
+                    // Check for alliance formation
+                    checkAllianceFormation();
+                }
+            } else if (decision.type === 'unit') {
+                if (decision.unitType === 'dreamer' && ai.resources.energy >= 20) {
+                    ai.resources.energy -= 20;
+                    createAIUnit('dreamer');
+                } else if (decision.unitType === 'weaver' && ai.resources.insight >= 20) {
+                    ai.resources.insight -= 20;
+                    createAIUnit('weaver');
+                }
+            }
+        };
+
+        const createAIUnit = (type) => {
+            // Create unit in a different area from player
+            const aiZoneX = canvasState.width * 0.7 + Math.random() * 200;
+            const aiZoneY = canvasState.height * 0.3 + Math.random() * 200;
+
+            addSprite(type, 1, aiZoneX, aiZoneY);
+
+            // Mark the last created unit as AI-owned
+            const lastUnit = gameState.villageGrid[gameState.villageGrid.length - 1];
+            if (lastUnit) {
+                lastUnit.owner = 'ruler';
+                lastUnit.isAI = true;
+            }
+
+            log(`🏛️ AI Ruler summoned a ${type}!`, 'warning');
+        };
+
+        const initializePlayerSwitching = () => {
+            const gardenerBtn = document.getElementById('gardener-player-btn');
+            const rulerBtn = document.getElementById('ruler-player-btn');
+            const allianceBtn = document.getElementById('alliance-mode-btn');
+
+            if (gardenerBtn) {
+                gardenerBtn.addEventListener('click', () => switchPlayer('gardener'));
+            }
+            if (rulerBtn) {
+                rulerBtn.addEventListener('click', () => switchPlayer('ruler'));
+            }
+            if (allianceBtn) {
+                allianceBtn.addEventListener('click', () => switchPlayer('alliance'));
+            }
+
+            // Initialize UI
+            updatePlayerUI();
+        };
+
+        const updateIntegrationLevel = () => {
+            if (!gameState.allianceFormed) return;
+
+            // Integration grows based on balanced development
+            const rulerStrength = gameState.control + Object.values(gameState.rulerBuildings).reduce((sum, count) => sum + count, 0) * 5;
+            const gardenerWisdom = gameState.consciousness + Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0) * 5;
+
+            // Perfect balance increases integration faster
+            const balance = 1 - Math.abs(rulerStrength - gardenerWisdom) / Math.max(rulerStrength, gardenerWisdom, 1);
+            const integrationGrowth = balance * 0.1; // Up to 0.1% per update
+
+            gameState.integrationLevel = Math.min(100, gameState.integrationLevel + integrationGrowth);
+
+            // Milestones
+            if (gameState.integrationLevel >= 50 && !gameState.integrationMilestone50) {
+                gameState.integrationMilestone50 = true;
+                log('🌟 Integration Level: 50% - The alliance strengthens! Cosmic defenses improve.', 'success');
+            }
+            if (gameState.integrationLevel >= 75 && !gameState.integrationMilestone75) {
+                gameState.integrationMilestone75 = true;
+                log('🌟 Integration Level: 75% - Near-perfect synthesis! Reality itself bends to your will.', 'success');
+            }
+        };
+
         const updateCrisisLevel = () => {
             // Calculate crisis level based on negative factors
             let crisisFactors = 0;
@@ -7062,9 +7527,10 @@
                 crisisFactors += (50 - gameState.harmony) * 0.3;
             }
 
-            // Imbalanced paths increase crisis
+            // Imbalanced paths increase crisis (but less if alliance formed)
             const pathImbalance = Math.abs(gameState.statistics.rulerPathChoices - gameState.statistics.gardenerPathChoices);
-            crisisFactors += pathImbalance * 0.5;
+            const imbalancePenalty = gameState.allianceFormed ? pathImbalance * 0.2 : pathImbalance * 0.5;
+            crisisFactors += imbalancePenalty;
 
             // Low consciousness increases crisis
             if (gameState.consciousness < 30) {
@@ -7072,6 +7538,11 @@
             }
 
             gameState.crisisLevel = Math.min(100, Math.max(0, crisisFactors));
+
+            // Calculate external threat level (only if alliance formed)
+            if (gameState.allianceFormed) {
+                gameState.externalThreatLevel = Math.min(100, gameState.integrationLevel + gameState.crisisLevel * 0.5);
+            }
         };
 
         const checkForNewCrises = () => {
@@ -7082,7 +7553,28 @@
                 return;
             }
 
-            // Check each horseman
+            // Check cosmic threats first (if alliance formed)
+            if (gameState.allianceFormed && gameState.cosmicThreatActive) {
+                for (const [key, threat] of Object.entries(cosmicThreatConfig)) {
+                    // Skip if already active or defeated
+                    if (gameState.activeCrises.some(c => c.type === key) ||
+                        gameState.horsemenDefeated.includes(key)) {
+                        continue;
+                    }
+
+                    // Check if external threat level is high enough
+                    if (gameState.externalThreatLevel >= threat.triggerLevel) {
+                        // Lower chance for cosmic threats (10% per check)
+                        if (Math.random() < 0.1) {
+                            triggerCosmicThreat(key, threat);
+                            gameState.lastCrisisTime = now;
+                            return; // Only one crisis at a time
+                        }
+                    }
+                }
+            }
+
+            // Check each horseman (regular crises)
             for (const [key, horseman] of Object.entries(fourHorsemenConfig)) {
                 // Skip if already active or defeated
                 if (gameState.activeCrises.some(c => c.type === key) ||
@@ -7112,7 +7604,8 @@
                 duration: config.duration,
                 icon: config.icon,
                 color: config.color,
-                resolved: false
+                resolved: false,
+                isCosmicThreat: false
             };
 
             gameState.activeCrises.push(crisis);
@@ -7128,6 +7621,39 @@
             setTimeout(() => {
                 if (!crisis.resolved) {
                     resolveCrisisAutomatically(crisis);
+                }
+            }, config.duration);
+        };
+
+        const triggerCosmicThreat = (type, config) => {
+            const threat = {
+                type: type,
+                name: config.name,
+                description: config.description,
+                effects: config.effects,
+                startTime: Date.now(),
+                duration: config.duration,
+                icon: config.icon,
+                color: config.color,
+                resolved: false,
+                isCosmicThreat: true,
+                requiresAlliance: config.requiresAlliance
+            };
+
+            gameState.activeCrises.push(threat);
+
+            log(`${config.icon} COSMIC THREAT: ${config.name.toUpperCase()}!`, 'error');
+            log('🌌 An external force threatens the sanctuary!', 'error');
+            log(config.description, 'warning');
+            log('⚡ Only the combined strength of Rulers and Gardeners can overcome this threat!', 'info');
+
+            // Apply immediate effects (more severe than regular crises)
+            applyCrisisEffects(threat.effects);
+
+            // Cosmic threats last longer and are harder to resolve
+            setTimeout(() => {
+                if (!threat.resolved) {
+                    resolveCosmicThreatAutomatically(threat);
                 }
             }, config.duration);
         };
@@ -7152,6 +7678,24 @@
                 lingeringEffects[resource] = amount * 0.3; // 30% of original effect
             }
             applyCrisisEffects(lingeringEffects);
+        };
+
+        const resolveCosmicThreatAutomatically = (threat) => {
+            // Remove from active crises
+            gameState.activeCrises = gameState.activeCrises.filter(c => c !== threat);
+
+            log(`${threat.icon} Cosmic threat "${threat.name}" overwhelms the sanctuary...`, 'error');
+            log('💔 The alliance was not strong enough. Reality itself suffers.', 'error');
+
+            // Apply severe lingering effects
+            const severeEffects = {};
+            for (const [resource, amount] of Object.entries(threat.effects)) {
+                severeEffects[resource] = amount * 0.8; // 80% of original effect lingers
+            }
+            applyCrisisEffects(severeEffects);
+
+            // Damage integration level
+            gameState.integrationLevel = Math.max(0, gameState.integrationLevel - 20);
         };
 
         const resolveCrisisManually = (crisisType) => {
@@ -7179,31 +7723,68 @@
 
                 let canResolve = false;
 
-                switch (crisis.type) {
-                    case 'war':
-                        // Resolve with high harmony or community structures
-                        canResolve = gameState.harmony > 70 ||
-                                   gameState.gardenerBuildings.communityCouncil > 0;
-                        break;
-                    case 'famine':
-                        // Resolve with sustainable agriculture
-                        canResolve = gameState.gardenerBuildings.permacultureGarden > 1 ||
-                                   gameState.rulerBuildings.automatedAgriculture > 2;
-                        break;
-                    case 'pestilence':
-                        // Resolve with healing structures or high consciousness
-                        canResolve = gameState.gardenerBuildings.healingGrove > 1 ||
-                                   gameState.consciousness > 60;
-                        break;
-                    case 'death':
-                        // Resolve with high planetary consciousness or ascension buildings
-                        canResolve = gameState.planetaryConsciousness > 80 ||
-                                   gameState.gardenerBuildings.planetaryAwakening > 0;
-                        break;
+                if (crisis.isCosmicThreat) {
+                    // Cosmic threats require alliance and high integration
+                    switch (crisis.type) {
+                        case 'voidDevourers':
+                            canResolve = gameState.allianceFormed &&
+                                       gameState.integrationLevel >= 60 &&
+                                       gameState.consciousness > 80 &&
+                                       gameState.gardenerBuildings.planetaryAwakening > 0;
+                            break;
+                        case 'stellarTyrants':
+                            canResolve = gameState.allianceFormed &&
+                                       gameState.integrationLevel >= 70 &&
+                                       gameState.control > 70 &&
+                                       gameState.rulerBuildings.totalitarianCore > 0 &&
+                                       gameState.gardenerBuildings.wisdomSanctuary > 1;
+                            break;
+                        case 'entropyStorm':
+                            canResolve = gameState.allianceFormed &&
+                                       gameState.integrationLevel >= 90 &&
+                                       gameState.harmony > 85 &&
+                                       gameState.planetaryConsciousness > 90;
+                            break;
+                    }
+                } else {
+                    // Regular Four Horsemen crises
+                    switch (crisis.type) {
+                        case 'war':
+                            // Can be resolved by either path, but alliance makes it easier
+                            canResolve = gameState.harmony > 70 ||
+                                       gameState.gardenerBuildings.communityCouncil > 0 ||
+                                       (gameState.allianceFormed && gameState.integrationLevel >= 30);
+                            break;
+                        case 'famine':
+                            // Resolve with sustainable agriculture from either path
+                            canResolve = gameState.gardenerBuildings.permacultureGarden > 1 ||
+                                       gameState.rulerBuildings.automatedAgriculture > 2 ||
+                                       (gameState.allianceFormed && gameState.integrationLevel >= 40);
+                            break;
+                        case 'pestilence':
+                            // Resolve with healing structures or high consciousness
+                            canResolve = gameState.gardenerBuildings.healingGrove > 1 ||
+                                       gameState.consciousness > 60 ||
+                                       (gameState.allianceFormed && gameState.integrationLevel >= 35);
+                            break;
+                        case 'death':
+                            // Resolve with high planetary consciousness or ascension buildings
+                            canResolve = gameState.planetaryConsciousness > 80 ||
+                                       gameState.gardenerBuildings.planetaryAwakening > 0 ||
+                                       (gameState.allianceFormed && gameState.integrationLevel >= 50);
+                            break;
+                    }
                 }
 
                 if (canResolve) {
                     resolveCrisisManually(crisis.type);
+
+                    // Successful crisis resolution improves integration
+                    if (gameState.allianceFormed) {
+                        const integrationBonus = crisis.isCosmicThreat ? 10 : 5;
+                        gameState.integrationLevel = Math.min(100, gameState.integrationLevel + integrationBonus);
+                        log(`🌟 Alliance strengthened! Integration Level: ${Math.round(gameState.integrationLevel)}%`, 'success');
+                    }
                 }
             }
         };
@@ -8283,6 +8864,9 @@
 
             // Initialize minimap navigation
             initializeMinimapNavigation();
+
+            // Initialize player switching
+            initializePlayerSwitching();
 
             // Initialize stats toggle
             initializeStatsToggle();
