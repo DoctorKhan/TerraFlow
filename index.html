@@ -142,6 +142,96 @@
             100% { transform: scale(1); }
         }
 
+        /* Control vs Consciousness Resource Styling */
+        .control-resource {
+            border-left: 3px solid #DC2626; /* Red border for Control */
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(127, 29, 29, 0.05));
+        }
+
+        .consciousness-resource {
+            border-left: 3px solid #059669; /* Green border for Consciousness */
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(6, 78, 59, 0.05));
+        }
+
+        .control-resource:hover {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(127, 29, 29, 0.08));
+        }
+
+        .consciousness-resource:hover {
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(6, 78, 59, 0.08));
+        }
+
+        /* Ruler Path Building Styling */
+        .ruler-building-tier-1 {
+            border-left: 3px solid #DC2626;
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(127, 29, 29, 0.05));
+        }
+
+        .ruler-building-tier-2 {
+            border-left: 3px solid #B91C1C;
+            background: linear-gradient(135deg, rgba(185, 28, 28, 0.15), rgba(127, 29, 29, 0.08));
+            box-shadow: 0 0 5px rgba(220, 38, 38, 0.3);
+        }
+
+        .ruler-building-tier-3 {
+            border-left: 3px solid #991B1B;
+            background: linear-gradient(135deg, rgba(153, 27, 27, 0.2), rgba(127, 29, 29, 0.1));
+            box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
+            animation: ominousPulse 3s infinite;
+        }
+
+        .ruler-building-tier-4 {
+            border-left: 3px solid #7F1D1D;
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.3), rgba(69, 10, 10, 0.15));
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
+            animation: totalitarianPulse 2s infinite;
+        }
+
+        @keyframes ominousPulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(220, 38, 38, 0.4); }
+            50% { box-shadow: 0 0 15px rgba(220, 38, 38, 0.7); }
+        }
+
+        @keyframes totalitarianPulse {
+            0%, 100% {
+                box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
+                border-left-color: #7F1D1D;
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(220, 38, 38, 0.9);
+                border-left-color: #DC2626;
+            }
+        }
+
+        /* Great Transition Progress Styling */
+        .great-transition-progress {
+            border-left: 3px solid #F59E0B; /* Golden border for the ultimate goal */
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.08));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .great-transition-progress:hover {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+        }
+
+        .great-transition-progress::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: greatTransitionShimmer 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes greatTransitionShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
         /* Tooltip styles */
         .tooltip {
             position: relative;
@@ -191,6 +281,9 @@
                 </button>
                 <button id="tab-progress" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all" onclick="switchTab('progress')" title="Achievements & Goals (Hotkey: 5)">
                     ⭐ Goals
+                </button>
+                <button id="tab-paths" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all" onclick="switchTab('paths')" title="Path of Rulers vs Gardeners (Hotkey: 6)">
+                    🌳 Paths
                 </button>
             </div>
 
@@ -259,12 +352,36 @@
 
                         <hr class="border-indigo-700 my-3">
 
-                        <button id="advisor-btn" class="grok-btn w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded transition-colors">
+                        <button id="advisor-btn" class="grok-btn bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded transition-colors mb-2">
                             📜 Ask Advisor
                         </button>
-                        <button id="seasonal-vision-btn" class="grok-btn w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-3 rounded transition-colors">
+                        <button id="seasonal-vision-btn" class="grok-btn bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-3 rounded transition-colors">
                             ✨ Get Vision
                         </button>
+
+                        <hr class="border-indigo-700 my-3">
+
+                        <div class="text-xs text-gray-400 mb-2">Save & Load</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="save-btn" class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-2 rounded transition-colors">
+                                💾 Save
+                            </button>
+                            <button id="load-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 rounded transition-colors">
+                                📁 Load
+                            </button>
+                            <button id="export-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs py-1 px-2 rounded transition-colors">
+                                📤 Export
+                            </button>
+                            <button id="import-btn" class="bg-orange-600 hover:bg-orange-700 text-white text-xs py-1 px-2 rounded transition-colors">
+                                📥 Import
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <button id="autosave-toggle" class="bg-gray-600 hover:bg-gray-700 text-white text-xs py-1 px-2 rounded transition-colors w-full">
+                                🔄 Auto-save: ON
+                            </button>
+                        </div>
+                        <input type="file" id="import-file" accept=".json" style="display: none;">
                     </div>
                 </div>
 
@@ -290,6 +407,46 @@
                             <div>Achievements: <span id="achievement-count">0</span></div>
                             <div>Goals Completed: <span id="goals-completed-count">0</span></div>
                             <div>Play Time: <span id="play-time">0m</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paths Tab -->
+                <div id="content-paths" class="tab-content hidden">
+                    <div class="space-y-4">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-bold text-white mb-2">The Great Transition</h3>
+                            <p class="text-sm text-gray-300">Choose your path: Control through dominance or Consciousness through harmony</p>
+                        </div>
+
+                        <!-- Path of the Rulers -->
+                        <div class="border border-red-600 rounded-lg p-3 bg-red-900/20">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-red-400">🏛️ Path of the Rulers (Tree of Knowledge)</h4>
+                                <span id="ruler-building-count" class="text-xs bg-red-800 text-red-200 px-2 py-1 rounded">0 Built</span>
+                            </div>
+                            <p class="text-xs text-red-300 mb-3">Immediate power through control and efficiency. Generates Control but suppresses Consciousness.</p>
+                            <div class="text-xs text-red-500 mb-3">
+                                ⚠️ Warning: Higher tiers lead to increasingly authoritarian outcomes
+                            </div>
+                            <div id="ruler-buildings" class="space-y-2">
+                                <!-- Ruler buildings will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Path of the Gardeners -->
+                        <div class="border border-green-600 rounded-lg p-3 bg-green-900/20">
+                            <h4 class="font-bold text-green-400 mb-2">🌱 Path of the Gardeners (Tree of Life)</h4>
+                            <p class="text-xs text-green-300 mb-3">Sustainable growth through consciousness and harmony. Generates Consciousness but reduces Control.</p>
+                            <div id="gardener-buildings" class="space-y-2">
+                                <!-- Gardener buildings will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-gray-400 p-2 bg-gray-900/30 rounded">
+                            <div><strong>Warning:</strong> Each path shapes humanity's future.</div>
+                            <div>Extreme imbalance creates Entropy and risks failure.</div>
+                            <div>The Great Transition requires wisdom in your choices.</div>
                         </div>
                     </div>
                 </div>
@@ -325,6 +482,21 @@
                         <div class="stat-value" id="wisdom">0</div>
                         <div class="stat-label">Wisdom</div>
                         <div class="stat-rate">+<span id="wisdom-rate">0.0</span>/s</div>
+                    </div>
+                    <div class="stat-card tooltip control-resource" data-tooltip="Control - Suppresses unrest but reduces consciousness. Generated by Ruler buildings.">
+                        <div class="stat-value" id="control">0</div>
+                        <div class="stat-label">Control</div>
+                        <div class="stat-rate">+<span id="control-rate">0.0</span>/s</div>
+                    </div>
+                    <div class="stat-card tooltip consciousness-resource" data-tooltip="Consciousness - Improves well-being and unlocks advanced technologies. Generated by Gardener buildings.">
+                        <div class="stat-value" id="consciousness">10</div>
+                        <div class="stat-label">Consciousness</div>
+                        <div class="stat-rate">+<span id="consciousness-rate">0.0</span>/s</div>
+                    </div>
+                    <div class="stat-card tooltip great-transition-progress" data-tooltip="Planetary Consciousness - The Great Transition goal. Reach 100 to achieve humanity's awakening!">
+                        <div class="stat-value" id="planetary-consciousness">10</div>
+                        <div class="stat-label">Planetary Consciousness</div>
+                        <div class="stat-rate">The Great Transition</div>
                     </div>
                     <div class="stat-card tooltip" data-tooltip="Total active units in your sanctuary">
                         <div class="stat-value" id="total-units">0</div>
@@ -424,6 +596,13 @@
             inspirationPerSecond: 0,
             wisdom: 0,
             wisdomPerSecond: 0,
+            // TDD: Control vs Consciousness System - The Great Transition
+            control: 0,
+            controlPerSecond: 0,
+            consciousness: 10, // Start with some consciousness
+            consciousnessPerSecond: 0,
+            planetaryConsciousness: 10, // Global consciousness level (win condition at 100)
+            entropy: 0, // Accumulated negative effects from Ruler path choices
             units: {
                 dreamers: 1,  // Start with 1 dreamer for immediate insight generation
                 weavers: 1,   // Start with 1 weaver for immediate energy generation
@@ -457,6 +636,31 @@
                 cohesion: 500,
                 cycling: 200,
             },
+            // TDD: Tech Tree Buildings
+            rulerBuildings: {
+                // Tier 1: Foundation
+                industrialMine: 0,
+                centralizedGrid: 0,
+                automatedAgriculture: 0,
+                // Tier 2: Systems
+                hierarchicalCity: 0,
+                propagandaTower: 0,
+                surveillanceNetwork: 0,
+                // Tier 3: Oppression
+                thoughtPolice: 0,
+                corporateState: 0,
+                memoryWipe: 0,
+                // Tier 4: Ultimate
+                totalitarianCore: 0
+            },
+            gardenerBuildings: {
+                stoneCircle: 0,
+                healingGrove: 0,
+                wisdomSanctuary: 0,
+                permacultureGarden: 0,
+                mycelialNetwork: 0
+            },
+            techTreeUnlocked: false, // Unlocks when certain conditions are met
             villageGrid: [],
             stars: [],
             intelligentCreatures: [], // TDD: Intelligent creatures with AI behaviors
@@ -488,10 +692,22 @@
                 maxHarmony: 50,
                 maxEnergy: 20,
                 maxInsight: 5,
+                maxControl: 0,
+                maxConsciousness: 10,
+                maxPlanetaryConsciousness: 10,
+                totalControlGenerated: 0,
+                totalConsciousnessGenerated: 0,
+                rulerPathChoices: 0,
+                gardenerPathChoices: 0,
                 gameStartTime: Date.now()
             },
             playerTitles: [],
             lastUpdate: Date.now(),
+            // TDD: Save System
+            saveVersion: "1.0.0", // Version for save compatibility
+            lastSaved: null,
+            autoSaveEnabled: true,
+            autoSaveInterval: 30000 // 30 seconds
         };
 
         // --- Game Config - TDD Races System ---
@@ -516,6 +732,177 @@
             nebulaShepherds: { name: "Nebula Shepherd", description: "Ancient beings birthing stars.", baseEnergy: 0.8, baseInsight: 0.3, baseHarmony: 0.1, costResource: 'insight', race: 'nebula', special: 'starBirth' }
         };
 
+        // --- TDD: Two Divergent Tech Trees ---
+
+        const rulerPathBuildings = {
+            // Tier 1: Foundation of Control (Early Game)
+            industrialMine: {
+                name: "Industrial Mine",
+                description: "Extracts resources efficiently but damages the environment. Foundation of industrial power.",
+                costResource: 'energy',
+                cost: 50,
+                effects: { control: 2, energy: 1.5, harmony: -0.5, entropy: 0.1 },
+                path: 'ruler',
+                category: 'extraction',
+                tier: 1,
+                unlockCondition: () => true // Always available
+            },
+            centralizedGrid: {
+                name: "Centralized Power Grid",
+                description: "Distributes power efficiently but creates dependency. Citizens rely on the system.",
+                costResource: 'insight',
+                cost: 75,
+                effects: { control: 3, energyPerSecond: 0.3, consciousness: -0.2, entropy: 0.05 },
+                path: 'ruler',
+                category: 'infrastructure',
+                tier: 1,
+                unlockCondition: () => gameState.rulerBuildings.industrialMine > 0
+            },
+            automatedAgriculture: {
+                name: "Automated Agriculture",
+                description: "Produces food efficiently but disconnects people from nature and traditional ways.",
+                costResource: 'energy',
+                cost: 60,
+                effects: { control: 1, energyPerSecond: 0.2, consciousness: -0.3, entropy: 0.05 },
+                path: 'ruler',
+                category: 'production',
+                tier: 1,
+                unlockCondition: () => true
+            },
+
+            // Tier 2: Systems of Dominance (Mid Game)
+            hierarchicalCity: {
+                name: "Hierarchical City",
+                description: "Organizes population in rigid social strata. Order through stratification.",
+                costResource: 'energy',
+                cost: 120,
+                effects: { control: 5, harmony: 1, consciousness: -1, entropy: 0.2, controlPerSecond: 0.1 },
+                path: 'ruler',
+                category: 'social',
+                tier: 2,
+                unlockCondition: () => gameState.rulerBuildings.centralizedGrid > 0
+            },
+            propagandaTower: {
+                name: "Propaganda Tower",
+                description: "Shapes public opinion through mass media. Truth becomes what the state declares.",
+                costResource: 'insight',
+                cost: 100,
+                effects: { control: 4, harmony: 0.5, consciousness: -1.5, entropy: 0.15 },
+                path: 'ruler',
+                category: 'information',
+                tier: 2,
+                unlockCondition: () => gameState.rulerBuildings.industrialMine > 0
+            },
+            surveillanceNetwork: {
+                name: "Surveillance Network",
+                description: "Monitors all citizen activity. Privacy becomes a relic of the past.",
+                costResource: 'insight',
+                cost: 150,
+                effects: { control: 6, consciousness: -2, entropy: 0.3, controlPerSecond: 0.15 },
+                path: 'ruler',
+                category: 'security',
+                tier: 2,
+                unlockCondition: () => gameState.rulerBuildings.propagandaTower > 0
+            },
+
+            // Tier 3: Instruments of Oppression (Late Game)
+            thoughtPolice: {
+                name: "Thought Police",
+                description: "Enforces ideological conformity. Independent thinking becomes dangerous.",
+                costResource: 'wisdom',
+                cost: 200,
+                effects: { control: 8, consciousness: -3, harmony: -1, entropy: 0.4, controlPerSecond: 0.2 },
+                path: 'ruler',
+                category: 'enforcement',
+                tier: 3,
+                unlockCondition: () => gameState.rulerBuildings.surveillanceNetwork > 0
+            },
+            corporateState: {
+                name: "Corporate State",
+                description: "Merges government and business into one entity. Citizens become human resources.",
+                costResource: 'energy',
+                cost: 300,
+                effects: { control: 10, energyPerSecond: 0.5, consciousness: -2, entropy: 0.5 },
+                path: 'ruler',
+                category: 'economic',
+                tier: 3,
+                unlockCondition: () => gameState.rulerBuildings.hierarchicalCity > 0
+            },
+            memoryWipe: {
+                name: "Memory Reconditioning Center",
+                description: "Erases inconvenient memories and implants approved thoughts. The past becomes malleable.",
+                costResource: 'wisdom',
+                cost: 400,
+                effects: { control: 12, consciousness: -5, harmony: -2, entropy: 0.6, controlPerSecond: 0.3 },
+                path: 'ruler',
+                category: 'psychological',
+                tier: 3,
+                unlockCondition: () => gameState.rulerBuildings.thoughtPolice > 0
+            },
+
+            // Tier 4: Ultimate Control (End Game)
+            totalitarianCore: {
+                name: "Totalitarian Core",
+                description: "The ultimate expression of control. Individual will ceases to exist.",
+                costResource: 'consciousness',
+                cost: 50, // Ironically cheap in consciousness - you sacrifice it
+                effects: { control: 20, consciousness: -10, harmony: -5, entropy: 1.0, controlPerSecond: 0.5 },
+                path: 'ruler',
+                category: 'ultimate',
+                tier: 4,
+                unlockCondition: () => gameState.rulerBuildings.memoryWipe > 0 && gameState.control > 50
+            }
+        };
+
+        const gardenerPathBuildings = {
+            stoneCircle: {
+                name: "Stone Circle",
+                description: "Ancient gathering place that enhances collective consciousness.",
+                costResource: 'wisdom',
+                cost: 40,
+                effects: { consciousness: 2, wisdom: 0.5, harmony: 1, control: -0.2 },
+                path: 'gardener',
+                category: 'spiritual'
+            },
+            healingGrove: {
+                name: "Healing Grove",
+                description: "Natural sanctuary that restores balance and awareness.",
+                costResource: 'inspiration',
+                cost: 50,
+                effects: { consciousness: 1.5, harmony: 2, consciousnessPerSecond: 0.1, entropy: -0.1 },
+                path: 'gardener',
+                category: 'healing'
+            },
+            wisdomSanctuary: {
+                name: "Wisdom Sanctuary",
+                description: "Center of learning that develops deep understanding.",
+                costResource: 'insight',
+                cost: 80,
+                effects: { consciousness: 3, wisdom: 1, wisdomPerSecond: 0.2, control: -0.5 },
+                path: 'gardener',
+                category: 'knowledge'
+            },
+            permacultureGarden: {
+                name: "Permaculture Garden",
+                description: "Sustainable food system that connects people to nature.",
+                costResource: 'harmony',
+                cost: 45,
+                effects: { consciousness: 1, harmony: 1.5, inspirationPerSecond: 0.15, entropy: -0.05 },
+                path: 'gardener',
+                category: 'sustainability'
+            },
+            mycelialNetwork: {
+                name: "Mycelial Network",
+                description: "Underground fungal network that enhances communication and connection.",
+                costResource: 'wisdom',
+                cost: 70,
+                effects: { consciousness: 2.5, consciousnessPerSecond: 0.2, harmony: 1, control: -1 },
+                path: 'gardener',
+                category: 'connection'
+            }
+        };
+
+        // Legacy nodes for backward compatibility
         const nodesConfig = {
             sustenance: { name: "Sustenance Node", description: "Boosts Dreamer insight generation.", effectTarget: 'dreamers', multiplier: 1.2, costResource: 'energy' },
             energy: { name: "Energy Node", description: "Boosts Weaver energy generation.", effectTarget: 'weavers', multiplier: 1.2, costResource: 'insight' },
@@ -548,7 +935,10 @@
             insight: 5,
             harmony: 50,
             inspiration: 0,
-            wisdom: 0
+            wisdom: 0,
+            control: 0,
+            consciousness: 10,
+            planetaryConsciousness: 10
         };
 
         const renderStats = () => {
@@ -558,10 +948,15 @@
             const harmonyEl = document.getElementById('harmony');
             const inspirationEl = document.getElementById('inspiration');
             const wisdomEl = document.getElementById('wisdom');
+            const controlEl = document.getElementById('control');
+            const consciousnessEl = document.getElementById('consciousness');
+            const planetaryConsciousnessEl = document.getElementById('planetary-consciousness');
             const energyRateEl = document.getElementById('energy-rate');
             const insightRateEl = document.getElementById('insight-rate');
             const inspirationRateEl = document.getElementById('inspiration-rate');
             const wisdomRateEl = document.getElementById('wisdom-rate');
+            const controlRateEl = document.getElementById('control-rate');
+            const consciousnessRateEl = document.getElementById('consciousness-rate');
             const totalUnitsEl = document.getElementById('total-units');
 
             // Check for increases and add visual feedback
@@ -582,6 +977,9 @@
             checkAndUpdate(insightEl, gameState.insight, 'insight');
             checkAndUpdate(inspirationEl, gameState.inspiration, 'inspiration');
             checkAndUpdate(wisdomEl, gameState.wisdom, 'wisdom');
+            checkAndUpdate(controlEl, gameState.control, 'control');
+            checkAndUpdate(consciousnessEl, gameState.consciousness, 'consciousness');
+            checkAndUpdate(planetaryConsciousnessEl, gameState.planetaryConsciousness, 'planetaryConsciousness');
 
             // Handle harmony separately (no formatting, just fixed decimal)
             if (harmonyEl) {
@@ -599,6 +997,8 @@
             if (insightRateEl) insightRateEl.textContent = gameState.insightPerSecond.toFixed(1);
             if (inspirationRateEl) inspirationRateEl.textContent = (gameState.inspirationPerSecond || 0).toFixed(1);
             if (wisdomRateEl) wisdomRateEl.textContent = (gameState.wisdomPerSecond || 0).toFixed(1);
+            if (controlRateEl) controlRateEl.textContent = (gameState.controlPerSecond || 0).toFixed(1);
+            if (consciousnessRateEl) consciousnessRateEl.textContent = (gameState.consciousnessPerSecond || 0).toFixed(1);
 
             // Calculate total units
             if (totalUnitsEl) {
@@ -658,7 +1058,7 @@
                 card.innerHTML = `
                     <h3 class="font-bold text-lg text-white">${unit.name}</h3>
                     <p class="text-sm text-indigo-200">${unit.description}</p>
-                    <button class="unit-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors"
+                    <button class="unit-btn mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors"
                             data-unit="${key}">
                         Create ${unit.name}
                     </button>
@@ -688,7 +1088,7 @@
                     button.textContent = `Create (Cost: ${formatNumber(cost)} ${unit.costResource})`;
 
                     // Update visual state without recreating
-                    button.className = `unit-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${
+                    button.className = `unit-btn mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${
                         canAfford ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 text-gray-400'
                     }`;
                 }
@@ -718,7 +1118,7 @@
                         ${node.name} <span class="text-sm font-normal text-indigo-300 level-display" data-node="${key}">(Lvl 0)</span>
                     </h3>
                     <p class="text-sm text-indigo-200">${node.description}</p>
-                    <button class="node-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors"
+                    <button class="node-btn mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors"
                             data-node="${key}">
                         Attune ${node.name}
                     </button>
@@ -756,7 +1156,7 @@
                     button.textContent = `Attune (Cost: ${formatNumber(cost)} ${node.costResource})`;
 
                     // Update visual state without recreating
-                    button.className = `node-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${
+                    button.className = `node-btn mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${
                         canAfford ? 'bg-teal-600 hover:bg-teal-700 text-white' : 'bg-gray-600 text-gray-400'
                     }`;
                 }
@@ -767,6 +1167,7 @@
             renderStats();
             renderUnits();
             renderNodes();
+            renderTechTrees();
         }
         
         // --- Enhanced Drawing System with Movement ---
@@ -838,6 +1239,19 @@
             // TDD: Check achievements and goals periodically
             if (Math.random() < 0.1) { // Check every ~10 frames to avoid performance issues
                 checkAchievementsAndGoals();
+            }
+
+            // TDD: Update Control vs Consciousness system
+            updateControlConsciousnessSystem(0.016);
+
+            // TDD: Check Great Transition win/lose conditions
+            if (Math.random() < 0.05) { // Check every ~20 frames
+                checkGreatTransitionConditions();
+            }
+
+            // TDD: Check for new building unlocks
+            if (Math.random() < 0.02) { // Check every ~50 frames
+                checkBuildingUnlocks();
             }
 
             gameState.villageGrid.sort((a, b) => a.y - b.y);
@@ -966,9 +1380,12 @@
 
         const addSprite = (type, count = 1) => {
             for (let i = 0; i < count; i++) {
-                const x = Math.random() * (canvas.width - 100) + 50;
-                const y = Math.random() * (canvas.height - 100) + 50;
                 const size = type === 'dome' ? 20 : type === 'crystal_tree' ? 25 : 15;
+
+                // Ensure units spawn within safe bounds considering their size
+                const margin = size + 10; // Extra margin for safety
+                const x = Math.random() * (canvas.width - 2 * margin) + margin;
+                const y = Math.random() * (canvas.height - 2 * margin) + margin;
 
                 // Determine if unit is movable based on type
                 const movable = ['dreamer', 'weaver', 'stellarNomads', 'voidWhisperers',
@@ -1676,6 +2093,363 @@
                 ctx.fillText('⚠️', unit.x, unit.y - unit.size - 20);
 
                 ctx.restore();
+            }
+        };
+
+        // --- TDD: Tech Tree Rendering ---
+
+        const renderTechTrees = () => {
+            if (!gameState.techTreeUnlocked) {
+                // Check if tech tree should be unlocked
+                const totalConsciousness = gameState.consciousness + gameState.control;
+                if (totalConsciousness >= 20) {
+                    gameState.techTreeUnlocked = true;
+                    log('🌳 The divergent paths reveal themselves! Choose between the Path of Rulers and Path of Gardeners.', 'info');
+                }
+            }
+
+            if (gameState.techTreeUnlocked) {
+                renderRulerBuildings();
+                renderGardenerBuildings();
+            }
+        };
+
+        const renderRulerBuildings = () => {
+            const container = document.getElementById('ruler-buildings');
+            if (!container) return;
+
+            if (!rulerBuildingsInitialized) {
+                container.innerHTML = '';
+
+                // Group buildings by tier
+                const buildingsByTier = {};
+                for (const [key, building] of Object.entries(rulerPathBuildings)) {
+                    const tier = building.tier || 1;
+                    if (!buildingsByTier[tier]) buildingsByTier[tier] = [];
+                    buildingsByTier[tier].push([key, building]);
+                }
+
+                // Render each tier
+                for (let tier = 1; tier <= 4; tier++) {
+                    if (!buildingsByTier[tier]) continue;
+
+                    const tierHeader = document.createElement('div');
+                    tierHeader.className = "text-xs font-bold text-red-400 mb-2 mt-3 border-b border-red-700 pb-1";
+                    tierHeader.textContent = `Tier ${tier}: ${getTierName(tier)}`;
+                    container.appendChild(tierHeader);
+
+                    for (const [key, building] of buildingsByTier[tier]) {
+                        const isUnlocked = building.unlockCondition();
+                        const ownedCount = gameState.rulerBuildings[key] || 0;
+
+                        const card = document.createElement('div');
+                        const tierClass = isUnlocked ? `ruler-building-tier-${building.tier}` : '';
+                        card.className = `building-card p-2 rounded border mb-2 ${tierClass} ${
+                            isUnlocked ? 'border-red-700 bg-red-900/10' : 'border-gray-700 bg-gray-900/20'
+                        }`;
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start mb-1">
+                                <h5 class="font-semibold text-sm ${isUnlocked ? 'text-red-300' : 'text-gray-500'}">${building.name}</h5>
+                                ${ownedCount > 0 ? `<span class="text-xs bg-red-800 text-red-200 px-1 rounded">${ownedCount}</span>` : ''}
+                            </div>
+                            <p class="text-xs mb-2 ${isUnlocked ? 'text-red-400' : 'text-gray-600'}">${building.description}</p>
+                            <div class="text-xs mb-2 ${isUnlocked ? 'text-red-500' : 'text-gray-600'}">
+                                Effects: ${formatBuildingEffects(building.effects)}
+                            </div>
+                            ${building.category ? `<div class="text-xs text-red-600 mb-2">Category: ${building.category}</div>` : ''}
+                            ${isUnlocked ?
+                                `<button class="ruler-btn text-xs py-1 px-2 rounded transition-colors" data-building="${key}">
+                                    Build (Cost: ${building.cost} ${building.costResource})
+                                </button>` :
+                                `<div class="text-xs text-gray-500 italic">🔒 Locked - Build prerequisite buildings</div>`
+                            }
+                        `;
+
+                        // Add stable event listener only for unlocked buildings
+                        if (isUnlocked) {
+                            const button = card.querySelector('.ruler-btn');
+                            if (button) {
+                                button.addEventListener('click', () => {
+                                    if (!button.disabled) {
+                                        buildRulerBuilding(key);
+                                    }
+                                });
+                            }
+                        }
+
+                        container.appendChild(card);
+                    }
+                }
+                rulerBuildingsInitialized = true;
+            }
+
+            updateRulerBuildingStates();
+            updateRulerBuildingCount();
+        };
+
+        const getTierName = (tier) => {
+            const tierNames = {
+                1: "Foundation of Control",
+                2: "Systems of Dominance",
+                3: "Instruments of Oppression",
+                4: "Ultimate Control"
+            };
+            return tierNames[tier] || "Unknown";
+        };
+
+        const updateRulerBuildingCount = () => {
+            const countEl = document.getElementById('ruler-building-count');
+            if (countEl) {
+                const totalBuildings = Object.values(gameState.rulerBuildings).reduce((sum, count) => sum + count, 0);
+                countEl.textContent = `${totalBuildings} Built`;
+
+                // Change color based on totalitarian progress
+                if (totalBuildings >= 8) {
+                    countEl.className = "text-xs bg-red-900 text-red-100 px-2 py-1 rounded border border-red-600";
+                } else if (totalBuildings >= 5) {
+                    countEl.className = "text-xs bg-red-800 text-red-200 px-2 py-1 rounded";
+                } else {
+                    countEl.className = "text-xs bg-red-700 text-red-300 px-2 py-1 rounded";
+                }
+            }
+        };
+
+        const renderGardenerBuildings = () => {
+            const container = document.getElementById('gardener-buildings');
+            if (!container) return;
+
+            if (!gardenerBuildingsInitialized) {
+                container.innerHTML = '';
+
+                for (const [key, building] of Object.entries(gardenerPathBuildings)) {
+                    const card = document.createElement('div');
+                    card.className = "building-card p-2 rounded border border-green-700 bg-green-900/10";
+                    card.innerHTML = `
+                        <h5 class="font-semibold text-green-300 text-sm">${building.name}</h5>
+                        <p class="text-xs text-green-400 mb-2">${building.description}</p>
+                        <div class="text-xs text-green-500 mb-2">
+                            Effects: ${formatBuildingEffects(building.effects)}
+                        </div>
+                        <button class="gardener-btn text-xs py-1 px-2 rounded transition-colors"
+                                data-building="${key}">
+                            Build (Cost: ${building.cost} ${building.costResource})
+                        </button>
+                    `;
+
+                    // Add stable event listener
+                    const button = card.querySelector('.gardener-btn');
+                    button.addEventListener('click', () => {
+                        if (!button.disabled) {
+                            buildGardenerBuilding(key);
+                        }
+                    });
+
+                    container.appendChild(card);
+                }
+                gardenerBuildingsInitialized = true;
+            }
+
+            updateGardenerBuildingStates();
+        };
+
+        const formatBuildingEffects = (effects) => {
+            const effectStrings = [];
+            for (const [key, value] of Object.entries(effects)) {
+                const sign = value > 0 ? '+' : '';
+                effectStrings.push(`${sign}${value} ${key}`);
+            }
+            return effectStrings.join(', ');
+        };
+
+        let rulerBuildingsInitialized = false;
+        let gardenerBuildingsInitialized = false;
+
+        const updateRulerBuildingStates = () => {
+            for (const key in rulerPathBuildings) {
+                const building = rulerPathBuildings[key];
+                const isUnlocked = building.unlockCondition();
+                const canAfford = isUnlocked && gameState[building.costResource] >= building.cost;
+
+                const button = document.querySelector(`[data-building="${key}"]`);
+                if (button) {
+                    button.disabled = !canAfford;
+
+                    if (isUnlocked) {
+                        const ownedCount = gameState.rulerBuildings[key] || 0;
+                        button.textContent = ownedCount > 0 ?
+                            `Build Another (Cost: ${building.cost} ${building.costResource})` :
+                            `Build (Cost: ${building.cost} ${building.costResource})`;
+
+                        button.className = `ruler-btn text-xs py-1 px-2 rounded transition-colors ${
+                            canAfford ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 text-gray-400'
+                        }`;
+                    }
+                }
+            }
+        };
+
+        // Force re-render when buildings are unlocked
+        const checkBuildingUnlocks = () => {
+            let newUnlocks = false;
+            for (const [key, building] of Object.entries(rulerPathBuildings)) {
+                if (building.unlockCondition() && !building._wasUnlocked) {
+                    building._wasUnlocked = true;
+                    newUnlocks = true;
+                    log(`🔓 New Ruler building unlocked: ${building.name}`, 'info');
+                }
+            }
+
+            if (newUnlocks) {
+                rulerBuildingsInitialized = false; // Force re-render
+                renderRulerBuildings();
+            }
+        };
+
+        const updateGardenerBuildingStates = () => {
+            for (const key in gardenerPathBuildings) {
+                const building = gardenerPathBuildings[key];
+                const canAfford = gameState[building.costResource] >= building.cost;
+
+                const button = document.querySelector(`[data-building="${key}"]`);
+                if (button) {
+                    button.disabled = !canAfford;
+                    button.textContent = `Build (Cost: ${building.cost} ${building.costResource})`;
+
+                    button.className = `gardener-btn text-xs py-1 px-2 rounded transition-colors ${
+                        canAfford ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 text-gray-400'
+                    }`;
+                }
+            }
+        };
+
+        // --- TDD: Building Construction Functions ---
+
+        const buildRulerBuilding = (buildingKey) => {
+            const building = rulerPathBuildings[buildingKey];
+            if (!building) return false;
+
+            // Check unlock condition
+            if (!building.unlockCondition()) {
+                log(`❌ ${building.name} is not yet unlocked!`, 'error');
+                return false;
+            }
+
+            if (gameState[building.costResource] >= building.cost) {
+                gameState[building.costResource] -= building.cost;
+                gameState.rulerBuildings[buildingKey] += 1;
+
+                // Apply building effects
+                applyBuildingEffects(building.effects);
+
+                // Special effects for high-tier buildings
+                applySpecialRulerEffects(buildingKey, building);
+
+                // Track statistics
+                updateStatistics('ruler_path_choice');
+
+                // Tier-specific messages
+                const tierMessages = {
+                    1: `🏛️ Built ${building.name}! The foundation of control is laid.`,
+                    2: `⚡ Built ${building.name}! Systems of dominance expand.`,
+                    3: `🔒 Built ${building.name}! The instruments of oppression tighten their grip.`,
+                    4: `👁️ Built ${building.name}! Ultimate control is achieved.`
+                };
+
+                const message = tierMessages[building.tier] || `🏛️ Built ${building.name}! The path of control strengthens.`;
+                log(message, building.tier >= 3 ? 'warning' : 'info');
+
+                // Check for new unlocks
+                checkBuildingUnlocks();
+
+                // Save progress after building construction
+                saveGameState();
+                return true;
+            } else {
+                log(`❌ Insufficient ${building.costResource} to build ${building.name}!`, 'error');
+                return false;
+            }
+        };
+
+        const applySpecialRulerEffects = (buildingKey, building) => {
+            switch (buildingKey) {
+                case 'surveillanceNetwork':
+                    log('📹 Citizens now live under constant surveillance. Privacy is extinct.', 'warning');
+                    // Reduce consciousness generation rate globally
+                    gameState.consciousnessPerSecond = Math.max(0, gameState.consciousnessPerSecond - 0.1);
+                    break;
+
+                case 'thoughtPolice':
+                    log('🚨 Independent thought is now a crime. Conformity is enforced.', 'warning');
+                    // Dramatically reduce wisdom generation
+                    gameState.wisdomPerSecond = Math.max(0, gameState.wisdomPerSecond - 0.2);
+                    break;
+
+                case 'memoryWipe':
+                    log('🧠 The past is being rewritten. History serves the state.', 'warning');
+                    // Reduce all consciousness-related resources
+                    gameState.consciousness = Math.max(0, gameState.consciousness - 5);
+                    gameState.wisdom = Math.max(0, gameState.wisdom - 10);
+                    break;
+
+                case 'totalitarianCore':
+                    log('👁️ THE GREAT BROTHER WATCHES. Individual will has been extinguished.', 'error');
+                    log('🔴 WARNING: You have chosen the path of absolute tyranny. The people are enslaved.', 'error');
+                    // Massive consciousness penalty but huge control boost
+                    gameState.consciousness = Math.max(0, gameState.consciousness - 20);
+                    gameState.planetaryConsciousness = Math.max(0, gameState.planetaryConsciousness - 15);
+                    // Check if this triggers a defeat condition
+                    if (gameState.consciousness <= 0 && gameState.planetaryConsciousness <= 5) {
+                        setTimeout(() => {
+                            showGreatTransitionDefeat('totalitarian_victory');
+                        }, 2000);
+                    }
+                    break;
+
+                case 'corporateState':
+                    log('💼 The merger is complete. Citizens are now human resources.', 'warning');
+                    // Boost energy but reduce harmony
+                    gameState.energyPerSecond += 0.3;
+                    gameState.harmony = Math.max(0, gameState.harmony - 5);
+                    break;
+            }
+        };
+
+        const buildGardenerBuilding = (buildingKey) => {
+            const building = gardenerPathBuildings[buildingKey];
+            if (!building) return false;
+
+            if (gameState[building.costResource] >= building.cost) {
+                gameState[building.costResource] -= building.cost;
+                gameState.gardenerBuildings[buildingKey] += 1;
+
+                // Apply building effects
+                applyBuildingEffects(building.effects);
+
+                // Track statistics
+                updateStatistics('gardener_path_choice');
+
+                log(`🌱 Built ${building.name}! The path of consciousness grows.`, 'success');
+
+                // Save progress after building construction
+                saveGameState();
+                return true;
+            }
+            return false;
+        };
+
+        const applyBuildingEffects = (effects) => {
+            for (const [resource, amount] of Object.entries(effects)) {
+                if (resource.endsWith('PerSecond')) {
+                    // Handle per-second effects
+                    const baseResource = resource.replace('PerSecond', '');
+                    if (gameState[resource] !== undefined) {
+                        gameState[resource] += amount;
+                    }
+                } else if (gameState[resource] !== undefined) {
+                    // Handle immediate effects
+                    gameState[resource] = Math.max(0, gameState[resource] + amount);
+                }
             }
         };
 
@@ -3524,8 +4298,10 @@
         };
 
         const spawnConversationalUnit = (type) => {
-            const x = Math.random() * (canvas.width - 200) + 100;
-            const y = Math.random() * (canvas.height - 200) + 100;
+            const size = 20; // Typical conversational unit size
+            const margin = size + 15; // Extra margin for safety
+            const x = Math.random() * (canvas.width - 2 * margin) + margin;
+            const y = Math.random() * (canvas.height - 2 * margin) + margin;
             const unit = createConversationalUnit(type, x, y);
             gameState.conversationalUnits.push(unit);
             log(`A ${type} awakens and begins to contemplate the sanctuary...`, 'success');
@@ -4719,6 +5495,21 @@
                     stats.totalInsightGenerated += data.amount || 0;
                     stats.maxInsight = Math.max(stats.maxInsight, gameState.insight);
                     break;
+                case 'control_generated':
+                    stats.totalControlGenerated += data.amount || 0;
+                    stats.maxControl = Math.max(stats.maxControl, gameState.control);
+                    break;
+                case 'consciousness_generated':
+                    stats.totalConsciousnessGenerated += data.amount || 0;
+                    stats.maxConsciousness = Math.max(stats.maxConsciousness, gameState.consciousness);
+                    stats.maxPlanetaryConsciousness = Math.max(stats.maxPlanetaryConsciousness, gameState.planetaryConsciousness);
+                    break;
+                case 'ruler_path_choice':
+                    stats.rulerPathChoices += 1;
+                    break;
+                case 'gardener_path_choice':
+                    stats.gardenerPathChoices += 1;
+                    break;
                 case 'interaction_occurred':
                     stats.totalInteractions += 1;
                     break;
@@ -4732,6 +5523,455 @@
 
             // Update play time
             stats.playTime = Date.now() - stats.gameStartTime;
+        };
+
+        // --- TDD: Control vs Consciousness System ---
+
+        const updateControlConsciousnessSystem = (deltaTime) => {
+            // Control suppresses unrest but reduces consciousness over time
+            if (gameState.control > 0) {
+                const consciousnessReduction = gameState.control * 0.01 * deltaTime; // 1% per second per Control point
+                gameState.consciousness = Math.max(0, gameState.consciousness - consciousnessReduction);
+
+                // Control also reduces harmony slightly (authoritarian effects)
+                const harmonyReduction = gameState.control * 0.005 * deltaTime;
+                gameState.harmony = Math.max(0, gameState.harmony - harmonyReduction);
+            }
+
+            // Consciousness improves well-being but can create resistance to control
+            if (gameState.consciousness > 0) {
+                const harmonyBonus = gameState.consciousness * 0.01 * deltaTime; // 1% per second per Consciousness point
+                gameState.harmony = Math.min(100, gameState.harmony + harmonyBonus);
+
+                // High consciousness reduces control effectiveness
+                if (gameState.consciousness > gameState.control) {
+                    const controlReduction = (gameState.consciousness - gameState.control) * 0.005 * deltaTime;
+                    gameState.control = Math.max(0, gameState.control - controlReduction);
+                }
+            }
+
+            // Update planetary consciousness based on individual consciousness
+            const consciousnessContribution = gameState.consciousness * 0.1 * deltaTime;
+            const controlPenalty = gameState.control * 0.05 * deltaTime;
+            gameState.planetaryConsciousness = Math.max(0, Math.min(100,
+                gameState.planetaryConsciousness + consciousnessContribution - controlPenalty
+            ));
+
+            // Calculate entropy from imbalanced systems
+            const imbalance = Math.abs(gameState.control - gameState.consciousness);
+            if (imbalance > 20) {
+                gameState.entropy += imbalance * 0.001 * deltaTime;
+            }
+
+            // Track statistics
+            if (gameState.controlPerSecond > 0) {
+                updateStatistics('control_generated', { amount: gameState.controlPerSecond * deltaTime });
+            }
+            if (gameState.consciousnessPerSecond > 0) {
+                updateStatistics('consciousness_generated', { amount: gameState.consciousnessPerSecond * deltaTime });
+            }
+        };
+
+        const checkGreatTransitionConditions = () => {
+            // Win condition: Planetary Consciousness reaches 100
+            if (gameState.planetaryConsciousness >= 100) {
+                showGreatTransitionVictory();
+                return true;
+            }
+
+            // Lose conditions
+            if (gameState.consciousness <= 0 && gameState.planetaryConsciousness <= 0) {
+                showGreatTransitionDefeat('consciousness_collapse');
+                return true;
+            }
+
+            if (gameState.entropy >= 100) {
+                showGreatTransitionDefeat('entropy_overload');
+                return true;
+            }
+
+            if (gameState.harmony <= 0) {
+                showGreatTransitionDefeat('harmony_collapse');
+                return true;
+            }
+
+            return false;
+        };
+
+        const showGreatTransitionVictory = () => {
+            log('🌟 THE GREAT TRANSITION ACHIEVED! 🌟', 'success');
+            log('Planetary Consciousness has reached 100. Humanity has awakened from its slumber!', 'success');
+            log('The age of unconscious suffering ends. The age of conscious evolution begins.', 'success');
+            log('🎉 You have guided humanity through the greatest transformation in its history!', 'success');
+
+            // Create victory celebration effects
+            createVictoryCelebration();
+        };
+
+        const showGreatTransitionDefeat = (reason) => {
+            const messages = {
+                consciousness_collapse: {
+                    title: '💀 CONSCIOUSNESS COLLAPSE',
+                    description: 'The light of awareness has been extinguished. Humanity remains trapped in unconscious patterns.',
+                    consequence: 'The rulers have won. The gardeners have failed.'
+                },
+                entropy_overload: {
+                    title: '🌪️ ENTROPY OVERLOAD',
+                    description: 'The system has become too chaotic and imbalanced to sustain life.',
+                    consequence: 'Neither path succeeded. Chaos reigns supreme.'
+                },
+                harmony_collapse: {
+                    title: '⚡ HARMONY COLLAPSE',
+                    description: 'All balance has been lost. Society crumbles into conflict and despair.',
+                    consequence: 'The foundation of civilization has shattered.'
+                },
+                totalitarian_victory: {
+                    title: '👁️ TOTALITARIAN VICTORY',
+                    description: 'The Ruler path has achieved total dominance. Individual consciousness has been eliminated.',
+                    consequence: 'Humanity exists, but no longer as conscious beings. They are perfect slaves.'
+                }
+            };
+
+            const message = messages[reason] || {
+                title: '💔 THE GREAT TRANSITION FAILED',
+                description: 'Humanity could not transcend its limitations.',
+                consequence: 'The old patterns persist.'
+            };
+
+            log(message.title, 'error');
+            log(message.description, 'error');
+            log(message.consequence, 'warning');
+            log('🔄 Consider your choices. Will you try a different path?', 'info');
+        };
+
+        const createVictoryCelebration = () => {
+            // Add visual celebration effects to the canvas
+            // TODO: Implement particle effects, color changes, etc.
+            log('✨ The sanctuary glows with the light of awakened consciousness...', 'success');
+        };
+
+        // --- TDD: Save/Load System ---
+
+        const SAVE_KEY = 'terraflow_save_data';
+        const CURRENT_SAVE_VERSION = "1.0.0";
+
+        const saveGameState = () => {
+            try {
+                const saveData = {
+                    version: CURRENT_SAVE_VERSION,
+                    timestamp: Date.now(),
+                    gameState: {
+                        // Core resources
+                        energy: gameState.energy,
+                        insight: gameState.insight,
+                        harmony: gameState.harmony,
+                        inspiration: gameState.inspiration,
+                        wisdom: gameState.wisdom,
+                        control: gameState.control,
+                        consciousness: gameState.consciousness,
+                        planetaryConsciousness: gameState.planetaryConsciousness,
+                        entropy: gameState.entropy,
+
+                        // Per-second rates
+                        energyPerSecond: gameState.energyPerSecond,
+                        insightPerSecond: gameState.insightPerSecond,
+                        inspirationPerSecond: gameState.inspirationPerSecond,
+                        wisdomPerSecond: gameState.wisdomPerSecond,
+                        controlPerSecond: gameState.controlPerSecond,
+                        consciousnessPerSecond: gameState.consciousnessPerSecond,
+
+                        // Units and buildings
+                        units: { ...gameState.units },
+                        nodes: { ...gameState.nodes },
+                        nodeCosts: { ...gameState.nodeCosts },
+                        rulerBuildings: { ...gameState.rulerBuildings },
+                        gardenerBuildings: { ...gameState.gardenerBuildings },
+                        techTreeUnlocked: gameState.techTreeUnlocked,
+
+                        // Progress tracking
+                        achievements: {
+                            unlocked: [...gameState.achievements.unlocked],
+                            progress: { ...gameState.achievements.progress },
+                            definitions: gameState.achievements.definitions
+                        },
+                        goals: {
+                            active: gameState.goals.active.map(goal => ({ ...goal })),
+                            completed: [...gameState.goals.completed],
+                            available: gameState.goals.available.map(goal => ({ ...goal })),
+                            milestones: gameState.goals.milestones.map(milestone => ({ ...milestone }))
+                        },
+                        statistics: { ...gameState.statistics },
+                        playerTitles: [...gameState.playerTitles],
+
+                        // Game state
+                        villageGrid: gameState.villageGrid.map(unit => ({ ...unit })),
+                        intelligentCreatures: gameState.intelligentCreatures.map(creature => ({ ...creature })),
+                        conversationalUnits: gameState.conversationalUnits.map(unit => ({ ...unit })),
+
+                        // Settings
+                        autoSaveEnabled: gameState.autoSaveEnabled
+                    }
+                };
+
+                localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+                gameState.lastSaved = Date.now();
+
+                log('💾 Game progress saved successfully!', 'success');
+                return true;
+            } catch (error) {
+                console.error('Failed to save game:', error);
+                log('❌ Failed to save game progress. Please try again.', 'error');
+                return false;
+            }
+        };
+
+        const loadGameState = () => {
+            try {
+                const savedData = localStorage.getItem(SAVE_KEY);
+                if (!savedData) {
+                    log('📁 No saved game found. Starting fresh!', 'info');
+                    return false;
+                }
+
+                const saveData = JSON.parse(savedData);
+
+                // Check save version compatibility
+                if (!saveData.version || saveData.version !== CURRENT_SAVE_VERSION) {
+                    log('⚠️ Save file from different version detected. Attempting migration...', 'warning');
+                    return migrateSaveData(saveData);
+                }
+
+                // Restore game state
+                const saved = saveData.gameState;
+
+                // Core resources
+                gameState.energy = saved.energy || 20;
+                gameState.insight = saved.insight || 5;
+                gameState.harmony = saved.harmony || 50;
+                gameState.inspiration = saved.inspiration || 0;
+                gameState.wisdom = saved.wisdom || 0;
+                gameState.control = saved.control || 0;
+                gameState.consciousness = saved.consciousness || 10;
+                gameState.planetaryConsciousness = saved.planetaryConsciousness || 10;
+                gameState.entropy = saved.entropy || 0;
+
+                // Per-second rates
+                gameState.energyPerSecond = saved.energyPerSecond || 0;
+                gameState.insightPerSecond = saved.insightPerSecond || 0;
+                gameState.inspirationPerSecond = saved.inspirationPerSecond || 0;
+                gameState.wisdomPerSecond = saved.wisdomPerSecond || 0;
+                gameState.controlPerSecond = saved.controlPerSecond || 0;
+                gameState.consciousnessPerSecond = saved.consciousnessPerSecond || 0;
+
+                // Units and buildings
+                if (saved.units) Object.assign(gameState.units, saved.units);
+                if (saved.nodes) Object.assign(gameState.nodes, saved.nodes);
+                if (saved.nodeCosts) Object.assign(gameState.nodeCosts, saved.nodeCosts);
+                if (saved.rulerBuildings) Object.assign(gameState.rulerBuildings, saved.rulerBuildings);
+                if (saved.gardenerBuildings) Object.assign(gameState.gardenerBuildings, saved.gardenerBuildings);
+                gameState.techTreeUnlocked = saved.techTreeUnlocked || false;
+
+                // Progress tracking
+                if (saved.achievements) {
+                    gameState.achievements.unlocked = saved.achievements.unlocked || [];
+                    gameState.achievements.progress = saved.achievements.progress || {};
+                    if (saved.achievements.definitions) {
+                        gameState.achievements.definitions = saved.achievements.definitions;
+                    }
+                }
+                if (saved.goals) {
+                    gameState.goals.active = saved.goals.active || [];
+                    gameState.goals.completed = saved.goals.completed || [];
+                    gameState.goals.available = saved.goals.available || [];
+                    gameState.goals.milestones = saved.goals.milestones || [];
+                }
+                if (saved.statistics) Object.assign(gameState.statistics, saved.statistics);
+                gameState.playerTitles = saved.playerTitles || [];
+
+                // Game entities (restore with caution)
+                if (saved.villageGrid && Array.isArray(saved.villageGrid)) {
+                    gameState.villageGrid = saved.villageGrid;
+                }
+                if (saved.intelligentCreatures && Array.isArray(saved.intelligentCreatures)) {
+                    gameState.intelligentCreatures = saved.intelligentCreatures;
+                }
+                if (saved.conversationalUnits && Array.isArray(saved.conversationalUnits)) {
+                    gameState.conversationalUnits = saved.conversationalUnits;
+                }
+
+                // Settings
+                gameState.autoSaveEnabled = saved.autoSaveEnabled !== undefined ? saved.autoSaveEnabled : true;
+
+                const saveAge = Math.floor((Date.now() - saveData.timestamp) / 1000 / 60); // minutes
+                log(`💾 Game progress loaded! (Saved ${saveAge} minutes ago)`, 'success');
+                return true;
+            } catch (error) {
+                console.error('Failed to load game:', error);
+                log('❌ Failed to load saved game. Starting fresh.', 'error');
+                return false;
+            }
+        };
+
+        const migrateSaveData = (saveData) => {
+            try {
+                log('🔄 Migrating save data to current version...', 'info');
+
+                // Handle different save versions
+                const oldVersion = saveData.version || "0.0.0";
+                let migrated = false;
+
+                // Migration from pre-1.0.0 saves
+                if (!saveData.gameState) {
+                    // Old format: data was directly in saveData
+                    const newSaveData = {
+                        version: CURRENT_SAVE_VERSION,
+                        timestamp: saveData.timestamp || Date.now(),
+                        gameState: {
+                            // Migrate old format to new structure
+                            energy: saveData.energy || 20,
+                            insight: saveData.insight || 5,
+                            harmony: saveData.harmony || 50,
+                            inspiration: saveData.inspiration || 0,
+                            wisdom: saveData.wisdom || 0,
+                            control: saveData.control || 0,
+                            consciousness: saveData.consciousness || 10,
+                            planetaryConsciousness: saveData.planetaryConsciousness || 10,
+                            entropy: saveData.entropy || 0,
+
+                            energyPerSecond: saveData.energyPerSecond || 0,
+                            insightPerSecond: saveData.insightPerSecond || 0,
+                            inspirationPerSecond: saveData.inspirationPerSecond || 0,
+                            wisdomPerSecond: saveData.wisdomPerSecond || 0,
+                            controlPerSecond: saveData.controlPerSecond || 0,
+                            consciousnessPerSecond: saveData.consciousnessPerSecond || 0,
+
+                            units: saveData.units || {},
+                            nodes: saveData.nodes || {},
+                            nodeCosts: saveData.nodeCosts || {},
+                            rulerBuildings: saveData.rulerBuildings || {},
+                            gardenerBuildings: saveData.gardenerBuildings || {},
+                            techTreeUnlocked: saveData.techTreeUnlocked || false,
+
+                            achievements: saveData.achievements || { unlocked: [], progress: {}, definitions: {} },
+                            goals: saveData.goals || { active: [], completed: [], available: [], milestones: [] },
+                            statistics: saveData.statistics || {},
+                            playerTitles: saveData.playerTitles || [],
+
+                            villageGrid: saveData.villageGrid || [],
+                            intelligentCreatures: saveData.intelligentCreatures || [],
+                            conversationalUnits: saveData.conversationalUnits || [],
+
+                            autoSaveEnabled: saveData.autoSaveEnabled !== undefined ? saveData.autoSaveEnabled : true
+                        }
+                    };
+
+                    // Save migrated data
+                    localStorage.setItem(SAVE_KEY, JSON.stringify(newSaveData));
+                    saveData = newSaveData;
+                    migrated = true;
+                }
+
+                // Apply the migrated save data
+                if (migrated) {
+                    log('✅ Save data migrated successfully!', 'success');
+                    return loadGameState(); // Reload with migrated data
+                } else {
+                    log('⚠️ Save version not supported. Starting fresh.', 'warning');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Migration failed:', error);
+                log('❌ Save migration failed. Starting fresh.', 'error');
+                return false;
+            }
+        };
+
+        const exportSaveData = () => {
+            try {
+                const saveData = localStorage.getItem(SAVE_KEY);
+                if (!saveData) {
+                    log('❌ No save data to export.', 'error');
+                    return;
+                }
+
+                const blob = new Blob([saveData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `terraflow_save_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                log('📤 Save data exported successfully!', 'success');
+            } catch (error) {
+                console.error('Export failed:', error);
+                log('❌ Failed to export save data.', 'error');
+            }
+        };
+
+        const importSaveData = (fileInput) => {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const saveData = JSON.parse(e.target.result);
+                    localStorage.setItem(SAVE_KEY, e.target.result);
+
+                    if (loadGameState()) {
+                        log('📥 Save data imported successfully!', 'success');
+                        location.reload(); // Refresh to apply imported data
+                    }
+                } catch (error) {
+                    console.error('Import failed:', error);
+                    log('❌ Failed to import save data. Invalid file format.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        const deleteSaveData = () => {
+            if (confirm('⚠️ Are you sure you want to delete all save data? This cannot be undone!')) {
+                localStorage.removeItem(SAVE_KEY);
+                log('🗑️ Save data deleted. Refresh the page to start fresh.', 'warning');
+            }
+        };
+
+        // Auto-save system
+        let autoSaveTimer = null;
+
+        const startAutoSave = () => {
+            if (autoSaveTimer) clearInterval(autoSaveTimer);
+
+            if (gameState.autoSaveEnabled) {
+                autoSaveTimer = setInterval(() => {
+                    saveGameState();
+                }, gameState.autoSaveInterval);
+            }
+        };
+
+        const stopAutoSave = () => {
+            if (autoSaveTimer) {
+                clearInterval(autoSaveTimer);
+                autoSaveTimer = null;
+            }
+        };
+
+        const toggleAutoSave = () => {
+            gameState.autoSaveEnabled = !gameState.autoSaveEnabled;
+
+            if (gameState.autoSaveEnabled) {
+                startAutoSave();
+                log('✅ Auto-save enabled (every 30 seconds)', 'success');
+            } else {
+                stopAutoSave();
+                log('⏸️ Auto-save disabled', 'info');
+            }
+
+            saveGameState(); // Save the setting change
         };
 
         const checkAchievementsAndGoals = () => {
@@ -5090,6 +6330,9 @@
                 case '5':
                     switchTab('progress');
                     break;
+                case '6':
+                    switchTab('paths');
+                    break;
                 case 'd':
                 case 'D':
                     if (gameState.energy >= gameState.unitCosts.dreamers) {
@@ -5189,6 +6432,11 @@
 
                 // TDD: Track statistics for achievements
                 updateStatistics('unit_created');
+
+                // TDD: Save progress after important actions
+                if (Math.random() < 0.3) { // 30% chance to save on unit creation
+                    saveGameState();
+                }
 
                 // TDD Fix: Don't immediately re-render UI, let game loop handle it
             }
@@ -5299,7 +6547,17 @@
 
         // --- Initialization ---
         const init = () => {
-            log("Welcome, Weaver. The sanctuary awakens with your first Dreamer and Weaver.", "success");
+            // Try to load saved game first
+            const loadedSave = loadGameState();
+
+            if (!loadedSave) {
+                log("🌟 Welcome to The Great Transition. Humanity stands at a crossroads between Control and Consciousness.", "success");
+                log("🎯 Your goal: Reach 100 Planetary Consciousness to achieve humanity's awakening.", "info");
+                log("⚠️ Beware: High Control suppresses Consciousness. High imbalance creates Entropy.", "warning");
+            } else {
+                log("🌟 Welcome back to The Great Transition. Your journey continues...", "success");
+            }
+
             log("🔑 Grok API integration ready - key will be requested when needed", "info");
 
             // TDD: Initialize Achievement & Goals System
@@ -5307,13 +6565,71 @@
             initializeGoals();
             log("⭐ Achievement & Goals system initialized", "info");
 
-            // Initialize sprites
-            addSprite('dome', 1);
-            addSprite('crystal_tree', 1);
+            // Initialize sprites (only if not loaded from save)
+            if (!loadedSave) {
+                addSprite('dome', 1);
+                addSprite('crystal_tree', 1);
+            }
 
             // Initialize event listeners
             advisorBtn.addEventListener('click', getAdvisorInsight);
             seasonalVisionBtn.addEventListener('click', getSeasonalVision);
+
+            // Save/Load system event listeners
+            const saveBtn = document.getElementById('save-btn');
+            const loadBtn = document.getElementById('load-btn');
+            const exportBtn = document.getElementById('export-btn');
+            const importBtn = document.getElementById('import-btn');
+            const autosaveToggle = document.getElementById('autosave-toggle');
+            const importFile = document.getElementById('import-file');
+
+            saveBtn.addEventListener('click', () => {
+                saveGameState();
+            });
+
+            loadBtn.addEventListener('click', () => {
+                if (loadGameState()) {
+                    location.reload(); // Refresh to apply loaded data
+                }
+            });
+
+            exportBtn.addEventListener('click', exportSaveData);
+
+            importBtn.addEventListener('click', () => {
+                importFile.click();
+            });
+
+            importFile.addEventListener('change', (e) => {
+                importSaveData(e.target);
+                e.target.value = ''; // Reset file input
+            });
+
+            autosaveToggle.addEventListener('click', () => {
+                toggleAutoSave();
+                updateAutoSaveButton();
+            });
+
+            // Update auto-save button text
+            const updateAutoSaveButton = () => {
+                autosaveToggle.textContent = `🔄 Auto-save: ${gameState.autoSaveEnabled ? 'ON' : 'OFF'}`;
+            };
+            updateAutoSaveButton();
+
+            // Start auto-save system
+            startAutoSave();
+
+            // Save on page unload to prevent data loss
+            window.addEventListener('beforeunload', (e) => {
+                saveGameState();
+                // Don't show confirmation dialog for normal saves
+            });
+
+            // Save when page becomes hidden (mobile/tab switching)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    saveGameState();
+                }
+            });
 
             // TDD API Key Popup Event Listeners
             const saveKeyBtn = document.getElementById('save-api-key');
