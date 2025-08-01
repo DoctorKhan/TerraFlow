@@ -554,61 +554,88 @@
             <div id="stats-bar" class="mb-2">
                 <div class="flex items-center justify-between bg-gray-900 rounded-lg p-2 border border-gray-700">
                     <!-- Core Resources (Always Visible) -->
-                    <div class="flex space-x-4">
-                        <div class="stat-compact tooltip" data-tooltip="Energy - Used to create Dreamers">
-                            <span class="text-blue-400 font-bold" id="energy">20</span>
-                            <span class="text-xs text-gray-400">Energy</span>
+                    <div class="flex space-x-6">
+                        <div class="stat-compact tooltip" data-tooltip="Energy - Create Dreamers (D key)">
+                            <span class="text-blue-400 font-bold text-lg" id="energy">20</span>
+                            <span class="text-xs text-gray-300">⚡ Energy</span>
                             <span class="text-xs text-blue-300">+<span id="energy-rate">0.0</span>/s</span>
                         </div>
-                        <div class="stat-compact tooltip" data-tooltip="Insight - Used to create Weavers">
-                            <span class="text-purple-400 font-bold" id="insight">5</span>
-                            <span class="text-xs text-gray-400">Insight</span>
+                        <div class="stat-compact tooltip" data-tooltip="Insight - Create Weavers (W key)">
+                            <span class="text-purple-400 font-bold text-lg" id="insight">5</span>
+                            <span class="text-xs text-gray-300">🔮 Insight</span>
                             <span class="text-xs text-purple-300">+<span id="insight-rate">0.0</span>/s</span>
                         </div>
-                        <div class="stat-compact tooltip" data-tooltip="Consciousness vs Control - The Great Transition balance">
-                            <span class="text-green-400 font-bold" id="consciousness">10</span>
-                            <span class="text-xs text-gray-400">Consciousness</span>
-                            <span class="text-red-400 font-bold" id="control">0</span>
-                            <span class="text-xs text-gray-400">Control</span>
+                        <div class="stat-compact tooltip" data-tooltip="The Great Transition Balance">
+                            <div class="flex space-x-2">
+                                <div class="text-center">
+                                    <span class="text-green-400 font-bold" id="consciousness">10</span>
+                                    <div class="text-xs text-gray-300">🌱 Consciousness</div>
+                                </div>
+                                <div class="text-gray-500 self-center">vs</div>
+                                <div class="text-center">
+                                    <span class="text-red-400 font-bold" id="control">0</span>
+                                    <div class="text-xs text-gray-300">👑 Control</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="stat-compact tooltip great-transition-progress" data-tooltip="Planetary Consciousness - Reach 100 for victory!">
-                            <span class="text-yellow-400 font-bold text-lg" id="planetary-consciousness">10</span>
-                            <span class="text-xs text-gray-400">Planetary</span>
+                        <div class="stat-compact tooltip great-transition-progress" data-tooltip="Planetary Consciousness - Reach 100 to win!">
+                            <span class="text-yellow-400 font-bold text-xl" id="planetary-consciousness">10</span>
+                            <span class="text-xs text-gray-300">🌍 Planetary</span>
+                            <div class="w-16 bg-gray-700 rounded-full h-1 mt-1">
+                                <div class="bg-yellow-400 h-1 rounded-full transition-all duration-300" style="width: 10%"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Toggle Button for Extended Stats -->
-                    <button id="stats-toggle" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded border border-gray-600" title="Show/Hide Extended Stats">
-                        📊 More
-                    </button>
+                    <!-- Control Buttons -->
+                    <div class="flex space-x-2">
+                        <button id="new-game-main-btn" class="bg-red-700 hover:bg-red-600 text-white text-xs px-2 py-1 rounded border border-red-600 font-bold" title="Start New Game (Clears All Progress)">
+                            🔄 New Game
+                        </button>
+                        <button id="stats-toggle" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded border border-gray-600" title="Show/Hide Extended Stats">
+                            📊 More
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Extended Stats (Collapsible) -->
-                <div id="extended-stats" class="hidden mt-2 bg-gray-900 rounded-lg p-2 border border-gray-700">
-                    <div class="grid grid-cols-6 gap-2">
+                <div id="extended-stats" class="hidden mt-2 bg-gray-900 rounded-lg p-3 border border-gray-700">
+                    <div class="grid grid-cols-4 gap-4">
+                        <!-- Secondary Resources -->
                         <div class="stat-mini tooltip" data-tooltip="Harmony - Affects all production efficiency">
                             <div class="text-sm font-bold text-green-300" id="harmony">75</div>
-                            <div class="text-xs text-gray-400">Harmony</div>
+                            <div class="text-xs text-gray-400">🎵 Harmony</div>
                         </div>
                         <div class="stat-mini tooltip" data-tooltip="Inspiration - Generated by unit interactions">
                             <div class="text-sm font-bold text-pink-300" id="inspiration">0</div>
-                            <div class="text-xs text-gray-400">Inspiration</div>
+                            <div class="text-xs text-gray-400">✨ Inspiration</div>
                         </div>
                         <div class="stat-mini tooltip" data-tooltip="Wisdom - Generated by philosophical beings">
                             <div class="text-sm font-bold text-indigo-300" id="wisdom">0</div>
-                            <div class="text-xs text-gray-400">Wisdom</div>
+                            <div class="text-xs text-gray-400">📚 Wisdom</div>
                         </div>
                         <div class="stat-mini tooltip crisis-indicator" data-tooltip="Crisis Level - High levels trigger the Four Horsemen">
                             <div class="text-sm font-bold text-red-300" id="crisis-level">0</div>
-                            <div class="text-xs text-gray-400">Crisis</div>
+                            <div class="text-xs text-gray-400">⚠️ Crisis</div>
                         </div>
-                        <div class="stat-mini tooltip" data-tooltip="Total active units in your sanctuary">
-                            <div class="text-sm font-bold text-cyan-300" id="total-units">0</div>
-                            <div class="text-xs text-gray-400">Units</div>
-                        </div>
-                        <div class="stat-mini">
-                            <div class="text-xs text-gray-500">Zoom: <span id="zoom-level">100%</span></div>
-                            <div class="text-xs text-gray-500">Units: <span id="visible-units">0</span>/<span id="total-units-mini">0</span></div>
+                    </div>
+
+                    <!-- Unit Information -->
+                    <div class="mt-3 pt-3 border-t border-gray-700">
+                        <div class="text-xs text-gray-400 mb-2">🏛️ Sanctuary Status</div>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="text-center">
+                                <div class="text-cyan-300 font-bold" id="total-units">0</div>
+                                <div class="text-gray-400">Total Units</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-blue-300 font-bold" id="zoom-level">100%</div>
+                                <div class="text-gray-400">Zoom Level</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-purple-300 font-bold"><span id="visible-units">0</span>/<span id="total-units-mini">0</span></div>
+                                <div class="text-gray-400">Visible</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -620,11 +647,22 @@
 
                 <!-- Canvas Controls -->
                 <div class="absolute top-2 right-2 flex flex-col space-y-1">
-                    <button id="zoom-in-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600" title="Zoom In">🔍+</button>
-                    <button id="zoom-out-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600" title="Zoom Out">🔍-</button>
-                    <button id="reset-view-btn" class="bg-green-800 hover:bg-green-700 text-white text-xs px-2 py-1 rounded border border-green-600" title="Reset View & Add Units">🎯 RESET</button>
-                    <button id="auto-arrange-btn" class="bg-blue-800 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded border border-blue-600" title="Auto-Arrange Units">📐</button>
-                    <button id="add-units-btn" class="bg-purple-800 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded border border-purple-600" title="Add Test Units">➕ UNITS</button>
+                    <!-- View Controls -->
+                    <div class="bg-gray-900 bg-opacity-90 rounded-lg p-1 border border-gray-600">
+                        <div class="flex space-x-1">
+                            <button id="zoom-in-btn" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded" title="Zoom In">🔍+</button>
+                            <button id="zoom-out-btn" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded" title="Zoom Out">🔍-</button>
+                            <button id="reset-view-btn" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded" title="Center View">🎯</button>
+                        </div>
+                    </div>
+
+                    <!-- Unit Controls -->
+                    <div class="bg-gray-900 bg-opacity-90 rounded-lg p-1 border border-gray-600">
+                        <div class="flex space-x-1">
+                            <button id="auto-arrange-btn" class="bg-purple-700 hover:bg-purple-600 text-white text-xs px-2 py-1 rounded" title="Auto-Arrange Units">📐</button>
+                            <button id="add-units-btn" class="bg-green-700 hover:bg-green-600 text-white text-xs px-2 py-1 rounded" title="Add Test Units">➕</button>
+                        </div>
+                    </div>
                 </div>
 
 
@@ -709,6 +747,168 @@
         const logOutput = document.getElementById('log-output');
         const seasonalVisionBtn = document.getElementById('seasonal-vision-btn');
         const advisorBtn = document.getElementById('advisor-btn');
+
+        // --- Reset Game State Function ---
+        function resetGameState() {
+            gameState = {
+                energy: 20,
+                energyPerSecond: 0,
+                insight: 5,
+                insightPerSecond: 0,
+                harmony: 50,
+                inspiration: 0,
+                inspirationPerSecond: 0,
+                wisdom: 0,
+                wisdomPerSecond: 0,
+                control: 0,
+                controlPerSecond: 0,
+                consciousness: 10,
+                consciousnessPerSecond: 0,
+                planetaryConsciousness: 10,
+                entropy: 0,
+                units: {
+                    dreamers: 1,
+                    weavers: 1,
+                    stellarNomads: 0,
+                    voidWhisperers: 0,
+                    crystalBeings: 0,
+                    plasmaDancers: 0,
+                    quantumSages: 0,
+                    nebulaShepherds: 0
+                },
+                unitCosts: {
+                    dreamers: 15,
+                    weavers: 15,
+                    stellarNomads: 25,
+                    voidWhisperers: 40,
+                    crystalBeings: 60,
+                    plasmaDancers: 80,
+                    quantumSages: 120,
+                    nebulaShepherds: 200
+                },
+                unlockedRaces: ['human'],
+                nodes: {
+                    sustenance: 0,
+                    energy: 0,
+                    cohesion: 0,
+                    cycling: 0,
+                },
+                nodeCosts: {
+                    sustenance: 100,
+                    energy: 100,
+                    cohesion: 500,
+                    cycling: 200,
+                },
+                rulerBuildings: {
+                    industrialMine: 0,
+                    centralizedGrid: 0,
+                    automatedAgriculture: 0,
+                    hierarchicalCity: 0,
+                    propagandaTower: 0,
+                    surveillanceNetwork: 0,
+                    thoughtPolice: 0,
+                    corporateState: 0,
+                    memoryWipe: 0,
+                    totalitarianCore: 0,
+                    exodusArk: 0
+                },
+                gardenerBuildings: {
+                    stoneCircle: 0,
+                    healingGrove: 0,
+                    permacultureGarden: 0,
+                    wisdomSanctuary: 0,
+                    mycelialNetwork: 0,
+                    communityCouncil: 0,
+                    planetaryAwakening: 0,
+                    sacredGeometry: 0,
+                    livingLibrary: 0,
+                    theAscension: 0
+                },
+                techTreeUnlocked: false,
+                gameEnded: false,
+                storyPhase: 'early',
+                anomalyDiscovered: false,
+                trueLoreRevealed: false,
+                rulerPathProgress: 0,
+                gardenerPathProgress: 0,
+                dominantPath: 'none',
+                crisisLevel: 0,
+                activeCrises: [],
+                horsemenDefeated: [],
+                lastCrisisTime: 0,
+                villageGrid: [],
+                stars: [],
+                intelligentCreatures: [],
+                conversationalUnits: [],
+                activeInteractions: [],
+                synergyEffects: [],
+                inspiration: 0,
+                wisdom: 0,
+                achievements: {
+                    unlocked: [],
+                    progress: {},
+                    categories: ['basic', 'advanced', 'master', 'secret'],
+                    definitions: {}
+                },
+                goals: {
+                    active: [],
+                    completed: [],
+                    available: [],
+                    milestones: []
+                },
+                statistics: {
+                    totalUnitsCreated: 3,
+                    totalEnergyGenerated: 0,
+                    totalInsightGenerated: 0,
+                    totalInteractions: 0,
+                    totalConversations: 0,
+                    playTime: 0,
+                    maxHarmony: 50,
+                    maxEnergy: 20,
+                    maxInsight: 5,
+                    maxControl: 0,
+                    maxConsciousness: 10,
+                    maxPlanetaryConsciousness: 10,
+                    totalControlGenerated: 0,
+                    totalConsciousnessGenerated: 0,
+                    rulerPathChoices: 0,
+                    gardenerPathChoices: 0,
+                    gameStartTime: Date.now()
+                },
+                playerTitles: [],
+                lastUpdate: Date.now(),
+                saveVersion: "1.0.0",
+                lastSaved: null,
+                autoSaveEnabled: true,
+                autoSaveInterval: 30000
+            };
+            previousValues = {
+                energy: 20,
+                insight: 5,
+                harmony: 50,
+                inspiration: 0,
+                wisdom: 0,
+                control: 0,
+                consciousness: 10,
+                planetaryConsciousness: 10
+            };
+            if (logOutput) logOutput.innerHTML = '';
+            if (typeof renderStats === 'function') renderStats();
+            if (typeof renderUnits === 'function') renderUnits();
+            if (typeof renderNodes === 'function') renderNodes();
+        }
+
+        // --- Attach Reset to New Game Button ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const newGameBtn = document.getElementById('new-game-main-btn');
+            if (newGameBtn) {
+                newGameBtn.textContent = 'New Game';
+                newGameBtn.onclick = function() {
+                    resetGameState();
+                    log('New game started. All progress cleared.', 'success');
+                };
+            }
+        });
 
         // --- Game State (Incremental Model) - TDD Races Expansion ---
         let gameState = {
@@ -1221,6 +1421,13 @@
             checkAndUpdate(consciousnessEl, gameState.consciousness, 'consciousness');
             checkAndUpdate(planetaryConsciousnessEl, gameState.planetaryConsciousness, 'planetaryConsciousness');
 
+            // Update planetary consciousness progress bar
+            const progressBar = document.querySelector('.bg-yellow-400');
+            if (progressBar) {
+                const percentage = Math.min(100, Math.max(0, gameState.planetaryConsciousness));
+                progressBar.style.width = `${percentage}%`;
+            }
+
             // Handle harmony separately (no formatting, just fixed decimal)
             if (harmonyEl) {
                 const oldHarmony = previousValues.harmony;
@@ -1614,8 +1821,10 @@
             // Draw minimap
             drawMinimap();
 
-            // Debug: Draw rendering info
-            drawDebugInfo();
+            // Only show debug info in development mode
+            if (window.location.hostname === 'localhost' && window.location.search.includes('debug')) {
+                drawDebugInfo();
+            }
         };
 
         const drawCanvasUI = () => {
@@ -1745,14 +1954,98 @@
             log('➕ Added test units to the sanctuary', 'success');
         };
 
+
+
+        const resetGameStateToDefaults = () => {
+            // Reset all resources to starting values
+            gameState.energy = 20;
+            gameState.insight = 5;
+            gameState.inspiration = 0;
+            gameState.wisdom = 0;
+            gameState.consciousness = 10;
+            gameState.control = 0;
+            gameState.harmony = 75;
+            gameState.entropy = 0;
+            gameState.planetaryConsciousness = 10;
+
+            // Reset per-second rates
+            gameState.energyPerSecond = 0.1;
+            gameState.insightPerSecond = 0.05;
+            gameState.inspirationPerSecond = 0;
+            gameState.wisdomPerSecond = 0;
+            gameState.consciousnessPerSecond = 0;
+            gameState.controlPerSecond = 0;
+
+            // Reset buildings
+            Object.keys(gameState.rulerBuildings).forEach(key => {
+                gameState.rulerBuildings[key] = 0;
+            });
+            Object.keys(gameState.gardenerBuildings).forEach(key => {
+                gameState.gardenerBuildings[key] = 0;
+            });
+
+            // Reset units
+            gameState.villageGrid = [];
+
+            // Reset story progression
+            gameState.storyPhase = 'early';
+            gameState.anomalyDiscovered = false;
+            gameState.trueLoreRevealed = false;
+            gameState.rulerPathProgress = 0;
+            gameState.gardenerPathProgress = 0;
+            gameState.dominantPath = 'none';
+
+            // Reset crisis system
+            gameState.crisisLevel = 0;
+            gameState.activeCrises = [];
+            gameState.horsemenDefeated = [];
+            gameState.lastCrisisTime = 0;
+
+            // Reset other flags
+            gameState.gameEnded = false;
+            gameState.techTreeUnlocked = false;
+
+            // Reset statistics
+            gameState.statistics = {
+                totalUnitsCreated: 0,
+                totalResourcesGenerated: 0,
+                totalBuildingsBuilt: 0,
+                rulerPathChoices: 0,
+                gardenerPathChoices: 0,
+                achievementsUnlocked: 0,
+                goalsCompleted: 0
+            };
+
+            // Reset achievements and goals
+            if (window.achievements) {
+                Object.values(window.achievements).forEach(achievement => {
+                    achievement.unlocked = false;
+                    achievement.progress = 0;
+                });
+            }
+
+            if (window.goals) {
+                Object.values(window.goals).forEach(goal => {
+                    goal.completed = false;
+                    goal.progress = 0;
+                });
+            }
+
+            // Force re-initialization of UI components
+            rulerBuildingsInitialized = false;
+            gardenerBuildingsInitialized = false;
+        };
+
         const initializeCanvasControls = () => {
-            // Zoom controls
+            // Canvas controls
+            const newGameBtn = document.getElementById('new-game-btn');
             const zoomInBtn = document.getElementById('zoom-in-btn');
             const zoomOutBtn = document.getElementById('zoom-out-btn');
             const resetViewBtn = document.getElementById('reset-view-btn');
             const autoArrangeBtn = document.getElementById('auto-arrange-btn');
             const addUnitsBtn = document.getElementById('add-units-btn');
 
+            if (newGameBtn) newGameBtn.addEventListener('click', startNewGame);
             if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
             if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
             if (resetViewBtn) resetViewBtn.addEventListener('click', resetView);
@@ -1832,6 +2125,7 @@
         const initializeStatsToggle = () => {
             const statsToggle = document.getElementById('stats-toggle');
             const extendedStats = document.getElementById('extended-stats');
+            const newGameMainBtn = document.getElementById('new-game-main-btn');
 
             if (statsToggle && extendedStats) {
                 statsToggle.addEventListener('click', () => {
@@ -1846,6 +2140,10 @@
                         statsToggle.title = 'Show Extended Stats';
                     }
                 });
+            }
+
+            if (newGameMainBtn) {
+                newGameMainBtn.addEventListener('click', startNewGame);
             }
         };
 
@@ -6830,11 +7128,21 @@
         };
 
         const startNewGame = () => {
-            // Clear save data
-            localStorage.removeItem('terraflow_save_data');
+            if (confirm('🔄 Start a completely new game?\n\nThis will:\n• Clear all saved progress\n• Reset all resources to starting values\n• Remove all buildings and units\n• Reset story progression\n\nThis cannot be undone!')) {
 
-            // Reload the page to start fresh
-            location.reload();
+                // Clear all localStorage data
+                localStorage.removeItem('terraflow_save_data');
+                localStorage.removeItem('terraflow_save');
+                localStorage.removeItem('terraflow_achievements');
+                localStorage.removeItem('terraflow_goals');
+
+                log('🔄 Clearing saved data and restarting...', 'info');
+
+                // Reload the page to start completely fresh
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            }
         };
 
         // --- TDD: Save/Load System ---
