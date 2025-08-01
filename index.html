@@ -7475,22 +7475,42 @@
             });
         };
 
+        // Create notification container if it doesn't exist
+        const getNotificationContainer = () => {
+            let container = document.getElementById('notification-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'notification-container';
+                container.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 1000;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    pointer-events: none;
+                `;
+                document.body.appendChild(container);
+            }
+            return container;
+        };
+
         const showAchievementNotification = (achievement) => {
+            const container = getNotificationContainer();
             const notification = document.createElement('div');
             notification.className = 'achievement-notification';
+
             notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
                 background: linear-gradient(135deg, #FFD700, #FFA500);
                 color: #000;
                 padding: 15px 20px;
                 border-radius: 10px;
                 box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
-                z-index: 1000;
                 font-family: 'Inter', sans-serif;
                 max-width: 300px;
                 animation: slideInRight 0.5s ease-out;
+                pointer-events: auto;
             `;
 
             const rarityColors = {
@@ -7513,31 +7533,32 @@
                 ${achievement.rewards ? `<div style="font-size: 12px; opacity: 0.9;">Rewards: ${formatRewards(achievement.rewards)}</div>` : ''}
             `;
 
-            document.body.appendChild(notification);
+            container.appendChild(notification);
 
             // Auto-remove after 5 seconds
             setTimeout(() => {
                 notification.style.animation = 'slideOutRight 0.5s ease-in';
-                setTimeout(() => notification.remove(), 500);
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
             }, 5000);
         };
 
         const showGoalNotification = (goal) => {
+            const container = getNotificationContainer();
             const notification = document.createElement('div');
             notification.className = 'goal-notification';
+
             notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
                 background: linear-gradient(135deg, #10B981, #059669);
                 color: white;
                 padding: 15px 20px;
                 border-radius: 10px;
                 box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-                z-index: 1000;
                 font-family: 'Inter', sans-serif;
                 max-width: 300px;
                 animation: slideInRight 0.5s ease-out;
+                pointer-events: auto;
             `;
 
             notification.innerHTML = `
@@ -7553,12 +7574,14 @@
                 ${goal.rewards ? `<div style="font-size: 12px; opacity: 0.9;">Rewards: ${formatRewards(goal.rewards)}</div>` : ''}
             `;
 
-            document.body.appendChild(notification);
+            container.appendChild(notification);
 
             // Auto-remove after 4 seconds
             setTimeout(() => {
                 notification.style.animation = 'slideOutRight 0.5s ease-in';
-                setTimeout(() => notification.remove(), 500);
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
             }, 4000);
         };
 
