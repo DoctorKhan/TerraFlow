@@ -661,6 +661,17 @@
                 mycelialNetwork: 0
             },
             techTreeUnlocked: false, // Unlocks when certain conditions are met
+            gameEnded: false, // Prevents repeated victory/defeat messages
+
+            // TDD: Story Progression System
+            storyPhase: 'early', // early, midgame_reveal, endgame, victory
+            anomalyDiscovered: false,
+            trueLoreRevealed: false,
+
+            // TDD: Victory Path Tracking
+            rulerPathProgress: 0, // Progress toward Ruler victory
+            gardenerPathProgress: 0, // Progress toward Gardener victory
+            dominantPath: 'none', // 'ruler', 'gardener', or 'balanced'
             villageGrid: [],
             stars: [],
             intelligentCreatures: [], // TDD: Intelligent creatures with AI behaviors
@@ -2399,9 +2410,12 @@
                     gameState.consciousness = Math.max(0, gameState.consciousness - 20);
                     gameState.planetaryConsciousness = Math.max(0, gameState.planetaryConsciousness - 15);
                     // Check if this triggers a defeat condition
-                    if (gameState.consciousness <= 0 && gameState.planetaryConsciousness <= 5) {
+                    if (!gameState.gameEnded && gameState.consciousness <= 0 && gameState.planetaryConsciousness <= 5) {
                         setTimeout(() => {
-                            showGreatTransitionDefeat('totalitarian_victory');
+                            if (!gameState.gameEnded) {
+                                showGreatTransitionDefeat('totalitarian_victory');
+                                gameState.gameEnded = true;
+                            }
                         }, 2000);
                     }
                     break;
@@ -5573,25 +5587,34 @@
         };
 
         const checkGreatTransitionConditions = () => {
+            // Don't check if game has already ended
+            if (gameState.gameEnded) {
+                return true;
+            }
+
             // Win condition: Planetary Consciousness reaches 100
             if (gameState.planetaryConsciousness >= 100) {
                 showGreatTransitionVictory();
+                gameState.gameEnded = true;
                 return true;
             }
 
             // Lose conditions
             if (gameState.consciousness <= 0 && gameState.planetaryConsciousness <= 0) {
                 showGreatTransitionDefeat('consciousness_collapse');
+                gameState.gameEnded = true;
                 return true;
             }
 
             if (gameState.entropy >= 100) {
                 showGreatTransitionDefeat('entropy_overload');
+                gameState.gameEnded = true;
                 return true;
             }
 
             if (gameState.harmony <= 0) {
                 showGreatTransitionDefeat('harmony_collapse');
+                gameState.gameEnded = true;
                 return true;
             }
 
@@ -5603,9 +5626,13 @@
             log('Planetary Consciousness has reached 100. Humanity has awakened from its slumber!', 'success');
             log('The age of unconscious suffering ends. The age of conscious evolution begins.', 'success');
             log('🎉 You have guided humanity through the greatest transformation in its history!', 'success');
+            log('🔄 Click "New Game" to start a fresh journey, or continue exploring this awakened world.', 'info');
 
             // Create victory celebration effects
             createVictoryCelebration();
+
+            // Show restart option
+            showRestartOption();
         };
 
         const showGreatTransitionDefeat = (reason) => {
@@ -5641,13 +5668,60 @@
             log(message.title, 'error');
             log(message.description, 'error');
             log(message.consequence, 'warning');
-            log('🔄 Consider your choices. Will you try a different path?', 'info');
+            log('🔄 Click "New Game" to try a different path and learn from this outcome.', 'info');
+
+            // Show restart option
+            showRestartOption();
         };
 
         const createVictoryCelebration = () => {
             // Add visual celebration effects to the canvas
             // TODO: Implement particle effects, color changes, etc.
             log('✨ The sanctuary glows with the light of awakened consciousness...', 'success');
+        };
+
+        const showRestartOption = () => {
+            // Add a game ended overlay and restart button
+            setTimeout(() => {
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50';
+                overlay.innerHTML = `
+                    <div class="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-md mx-4 text-center">
+                        <h3 class="text-xl font-bold text-white mb-4">🎮 Game Complete</h3>
+                        <p class="text-gray-300 mb-6">The Great Transition has concluded. Your choices have shaped humanity's destiny.</p>
+                        <div class="space-y-3">
+                            <button id="new-game-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition-colors">
+                                🔄 Start New Game
+                            </button>
+                            <button id="continue-exploring-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded transition-colors">
+                                🔍 Continue Exploring
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listeners
+                overlay.querySelector('#new-game-btn').onclick = () => {
+                    if (confirm('Start a new game? This will reset all progress.')) {
+                        startNewGame();
+                    }
+                };
+
+                overlay.querySelector('#continue-exploring-btn').onclick = () => {
+                    overlay.remove();
+                };
+
+                document.body.appendChild(overlay);
+            }, 3000); // Show after 3 seconds
+        };
+
+        const startNewGame = () => {
+            // Clear save data
+            localStorage.removeItem('terraflow_save_data');
+
+            // Reload the page to start fresh
+            location.reload();
         };
 
         // --- TDD: Save/Load System ---
@@ -5687,6 +5761,7 @@
                         rulerBuildings: { ...gameState.rulerBuildings },
                         gardenerBuildings: { ...gameState.gardenerBuildings },
                         techTreeUnlocked: gameState.techTreeUnlocked,
+                        gameEnded: gameState.gameEnded,
 
                         // Progress tracking
                         achievements: {
@@ -5770,6 +5845,7 @@
                 if (saved.rulerBuildings) Object.assign(gameState.rulerBuildings, saved.rulerBuildings);
                 if (saved.gardenerBuildings) Object.assign(gameState.gardenerBuildings, saved.gardenerBuildings);
                 gameState.techTreeUnlocked = saved.techTreeUnlocked || false;
+                gameState.gameEnded = saved.gameEnded || false;
 
                 // Progress tracking
                 if (saved.achievements) {
@@ -6499,6 +6575,11 @@
 
         let lastUIUpdate = 0;
         const gameLoop = () => {
+            // Stop the game loop if the game has ended
+            if (gameState.gameEnded) {
+                return;
+            }
+
             const now = Date.now();
             const delta = (now - gameState.lastUpdate) / 1000; // Time in seconds
 
