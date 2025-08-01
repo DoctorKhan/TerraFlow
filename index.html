@@ -189,6 +189,9 @@
                 <button id="tab-ai" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all" onclick="switchTab('ai')" title="Conversational AI (Hotkey: 4)">
                     💬 AI
                 </button>
+                <button id="tab-progress" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all" onclick="switchTab('progress')" title="Achievements & Goals (Hotkey: 5)">
+                    🏆 Progress
+                </button>
             </div>
 
             <!-- Tab Content -->
@@ -262,6 +265,32 @@
                         <button id="seasonal-vision-btn" class="grok-btn w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-3 rounded transition-colors">
                             ✨ Get Vision
                         </button>
+                    </div>
+                </div>
+
+                <!-- Progress Tab -->
+                <div id="content-progress" class="tab-content hidden">
+                    <div class="space-y-3">
+                        <div class="mb-3">
+                            <h3 class="text-sm font-medium text-white mb-2">🎯 Active Goals</h3>
+                            <div id="active-goals" class="space-y-2">
+                                <!-- Active goals will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <h3 class="text-sm font-medium text-white mb-2">🏆 Recent Achievements</h3>
+                            <div id="recent-achievements" class="space-y-2">
+                                <!-- Recent achievements will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-gray-300 p-2 bg-gray-900/30 rounded">
+                            <div><strong>Progress:</strong></div>
+                            <div>Achievements: <span id="achievement-count">0</span></div>
+                            <div>Goals Completed: <span id="goals-completed-count">0</span></div>
+                            <div>Play Time: <span id="play-time">0m</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -436,6 +465,32 @@
             synergyEffects: [], // TDD: Active synergy bonuses
             inspiration: 0, // TDD: New resource type
             wisdom: 0, // TDD: New resource type
+            // TDD: Achievement & Goals System
+            achievements: {
+                unlocked: [],
+                progress: {},
+                categories: ['basic', 'advanced', 'master', 'secret'],
+                definitions: {}
+            },
+            goals: {
+                active: [],
+                completed: [],
+                available: [],
+                milestones: []
+            },
+            statistics: {
+                totalUnitsCreated: 3, // Start with initial units
+                totalEnergyGenerated: 0,
+                totalInsightGenerated: 0,
+                totalInteractions: 0,
+                totalConversations: 0,
+                playTime: 0,
+                maxHarmony: 50,
+                maxEnergy: 20,
+                maxInsight: 5,
+                gameStartTime: Date.now()
+            },
+            playerTitles: [],
             lastUpdate: Date.now(),
         };
 
@@ -777,8 +832,13 @@
             // TDD: Update conversational AI units
             updateConversationalUnits(0.016);
 
-            // TDD: Update unit interactions and synergies (placeholder for now)
-            // updateUnitInteractions(0.016);
+            // TDD: Update unit interactions and synergies
+            updateUnitInteractions(0.016);
+
+            // TDD: Check achievements and goals periodically
+            if (Math.random() < 0.1) { // Check every ~10 frames to avoid performance issues
+                checkAchievementsAndGoals();
+            }
 
             gameState.villageGrid.sort((a, b) => a.y - b.y);
             gameState.villageGrid.forEach(item => {
@@ -3873,6 +3933,9 @@
 
             gameState.activeInteractions.push(interaction);
             log(`${unit1.type} and ${unit2.type} begin ${interactionType}!`, 'info');
+
+            // TDD: Track statistics for achievements
+            updateStatistics('interaction_occurred');
         };
 
         const applyInteractionEffects = (interaction, deltaTime) => {
@@ -3884,6 +3947,594 @@
                     }
                 }
             });
+        };
+
+        // --- TDD: Achievement & Goals System ---
+
+        const initializeAchievements = () => {
+            const achievements = {
+                // Basic Achievements
+                first_dreamer: {
+                    id: 'first_dreamer',
+                    name: 'Dream Weaver',
+                    description: 'Create your first Dreamer unit',
+                    category: 'basic',
+                    requirements: { type: 'unit_creation', unitType: 'dreamers', target: 1 },
+                    rewards: { insight: 10, title: 'Novice Dreamer' },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'common'
+                },
+                first_weaver: {
+                    id: 'first_weaver',
+                    name: 'Reality Shaper',
+                    description: 'Create your first Weaver unit',
+                    category: 'basic',
+                    requirements: { type: 'unit_creation', unitType: 'weavers', target: 1 },
+                    rewards: { energy: 15, title: 'Reality Apprentice' },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'common'
+                },
+                energy_milestone: {
+                    id: 'energy_milestone',
+                    name: 'Power Surge',
+                    description: 'Accumulate 100 Energy',
+                    category: 'basic',
+                    requirements: { type: 'resource_threshold', resource: 'energy', target: 100 },
+                    rewards: { energy: 25, insight: 10 },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'common'
+                },
+                harmony_master: {
+                    id: 'harmony_master',
+                    name: 'Harmony Master',
+                    description: 'Achieve 90% Harmony',
+                    category: 'advanced',
+                    requirements: { type: 'harmony_level', target: 90 },
+                    rewards: { harmony: 10, wisdom: 20, title: 'Harmony Master' },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'rare'
+                },
+                social_butterfly: {
+                    id: 'social_butterfly',
+                    name: 'Social Butterfly',
+                    description: 'Have 10 unit interactions',
+                    category: 'advanced',
+                    requirements: { type: 'total_interactions', target: 10 },
+                    rewards: { inspiration: 30, wisdom: 15 },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'uncommon'
+                },
+                conversationalist: {
+                    id: 'conversationalist',
+                    name: 'Deep Conversationalist',
+                    description: 'Have 5 conversations with AI units',
+                    category: 'advanced',
+                    requirements: { type: 'conversation_count', target: 5 },
+                    rewards: { wisdom: 25, insight: 15, title: 'Sage Communicator' },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'rare'
+                },
+                sanctuary_architect: {
+                    id: 'sanctuary_architect',
+                    name: 'Sanctuary Architect',
+                    description: 'Create 10 units of any type',
+                    category: 'advanced',
+                    requirements: { type: 'total_units_created', target: 10 },
+                    rewards: { energy: 50, insight: 30, inspiration: 20 },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'uncommon'
+                },
+                cosmic_sage: {
+                    id: 'cosmic_sage',
+                    name: 'Cosmic Sage',
+                    description: 'Reach maximum levels in all resources',
+                    category: 'master',
+                    requirements: {
+                        type: 'multiple_conditions',
+                        conditions: [
+                            { type: 'min_resource', resource: 'energy', value: 500 },
+                            { type: 'min_resource', resource: 'insight', value: 300 },
+                            { type: 'min_resource', resource: 'wisdom', value: 200 },
+                            { type: 'min_resource', resource: 'inspiration', value: 150 }
+                        ]
+                    },
+                    rewards: { title: 'Cosmic Sage', energy: 100, insight: 100, wisdom: 100, inspiration: 100 },
+                    unlocked: false,
+                    progress: 0,
+                    rarity: 'legendary'
+                }
+            };
+
+            gameState.achievements.definitions = achievements;
+            return achievements;
+        };
+
+        const initializeGoals = () => {
+            const goals = [
+                {
+                    id: 'sanctuary_growth',
+                    title: 'Growing Sanctuary',
+                    description: 'Expand your sanctuary by creating 5 units of any type',
+                    type: 'unit_count',
+                    target: 5,
+                    progress: 0,
+                    completed: false,
+                    rewards: { energy: 25, insight: 15, harmony: 10 },
+                    priority: 'high',
+                    category: 'main',
+                    hints: ['Create Dreamers and Weavers to expand your sanctuary', 'Each unit contributes to your sanctuary\'s growth']
+                },
+                {
+                    id: 'energy_collector',
+                    title: 'Energy Collector',
+                    description: 'Accumulate 200 Energy',
+                    type: 'resource_accumulation',
+                    resource: 'energy',
+                    target: 200,
+                    progress: 0,
+                    completed: false,
+                    rewards: { energy: 50, insight: 25 },
+                    priority: 'normal',
+                    category: 'resource',
+                    hints: ['Weavers generate Energy over time', 'Complete achievements for Energy bonuses']
+                },
+                {
+                    id: 'harmony_keeper',
+                    title: 'Harmony Keeper',
+                    description: 'Maintain Harmony above 80% for 2 minutes',
+                    type: 'harmony_maintenance',
+                    threshold: 80,
+                    target: 120000, // 2 minutes in milliseconds
+                    progress: 0,
+                    completed: false,
+                    rewards: { harmony: 15, wisdom: 20, title: 'Harmony Keeper' },
+                    priority: 'normal',
+                    category: 'harmony',
+                    hints: ['Keep your sanctuary balanced', 'Unit interactions help maintain harmony']
+                },
+                {
+                    id: 'social_network',
+                    title: 'Social Network',
+                    description: 'Facilitate 15 unit interactions',
+                    type: 'interaction_count',
+                    target: 15,
+                    progress: 0,
+                    completed: false,
+                    rewards: { inspiration: 40, wisdom: 25 },
+                    priority: 'normal',
+                    category: 'social',
+                    prerequisites: ['sanctuary_growth'],
+                    hints: ['Place units close together to encourage interactions', 'Different unit types create different interaction types']
+                }
+            ];
+
+            gameState.goals.available = goals;
+            gameState.goals.active = goals.slice(0, 2); // Start with first 2 goals active
+            return goals;
+        };
+
+        const checkAchievementProgress = (achievement, gameState) => {
+            const req = achievement.requirements;
+            let currentProgress = 0;
+
+            switch (req.type) {
+                case 'unit_creation':
+                    currentProgress = gameState.units[req.unitType] || 0;
+                    break;
+                case 'resource_threshold':
+                    currentProgress = gameState[req.resource] || 0;
+                    break;
+                case 'total_interactions':
+                    currentProgress = gameState.statistics.totalInteractions || 0;
+                    break;
+                case 'harmony_level':
+                    currentProgress = gameState.harmony || 0;
+                    break;
+                case 'conversation_count':
+                    currentProgress = gameState.statistics.totalConversations || 0;
+                    break;
+                case 'total_units_created':
+                    currentProgress = gameState.statistics.totalUnitsCreated || 0;
+                    break;
+                case 'multiple_conditions':
+                    currentProgress = req.conditions.every(condition =>
+                        checkSingleCondition(condition, gameState)
+                    ) ? 1 : 0;
+                    break;
+            }
+
+            achievement.progress = Math.min(currentProgress, req.target || 1);
+
+            if (achievement.progress >= (req.target || 1) && !achievement.unlocked) {
+                return { shouldUnlock: true, achievement };
+            }
+
+            return { shouldUnlock: false, achievement };
+        };
+
+        const checkSingleCondition = (condition, gameState) => {
+            switch (condition.type) {
+                case 'min_units':
+                    return (gameState.units[condition.unitType] || 0) >= condition.value;
+                case 'min_resource':
+                    return (gameState[condition.resource] || 0) >= condition.value;
+                default:
+                    return false;
+            }
+        };
+
+        const unlockAchievement = (achievement, gameState) => {
+            if (achievement.unlocked) return false;
+
+            achievement.unlocked = true;
+            achievement.unlockedAt = Date.now();
+
+            // Apply rewards
+            if (achievement.rewards) {
+                Object.keys(achievement.rewards).forEach(rewardType => {
+                    if (rewardType === 'title') {
+                        gameState.playerTitles.push(achievement.rewards[rewardType]);
+                    } else if (gameState[rewardType] !== undefined) {
+                        gameState[rewardType] += achievement.rewards[rewardType];
+                    }
+                });
+            }
+
+            // Add to unlocked achievements
+            gameState.achievements.unlocked.push(achievement.id);
+
+            // Show achievement notification
+            showAchievementNotification(achievement);
+
+            log(`🏆 Achievement Unlocked: ${achievement.name}!`, 'success');
+
+            return {
+                success: true,
+                achievement: achievement,
+                rewards: achievement.rewards
+            };
+        };
+
+        const updateGoalProgress = (goal, gameState) => {
+            let currentProgress = 0;
+
+            switch (goal.type) {
+                case 'unit_count':
+                    currentProgress = Object.values(gameState.units).reduce((sum, count) => sum + count, 0);
+                    break;
+                case 'resource_accumulation':
+                    currentProgress = gameState[goal.resource] || 0;
+                    break;
+                case 'harmony_maintenance':
+                    if (gameState.harmony >= goal.threshold) {
+                        goal.harmonyStartTime = goal.harmonyStartTime || Date.now();
+                        currentProgress = Date.now() - goal.harmonyStartTime;
+                    } else {
+                        goal.harmonyStartTime = null;
+                        currentProgress = 0;
+                    }
+                    break;
+                case 'interaction_count':
+                    currentProgress = gameState.statistics.totalInteractions || 0;
+                    break;
+                case 'conversation_count':
+                    currentProgress = gameState.statistics.totalConversations || 0;
+                    break;
+            }
+
+            goal.progress = Math.min(currentProgress, goal.target);
+
+            if (goal.progress >= goal.target && !goal.completed) {
+                return { shouldComplete: true, goal };
+            }
+
+            return { shouldComplete: false, goal };
+        };
+
+        const completeGoal = (goal, gameState) => {
+            if (goal.completed) return false;
+
+            goal.completed = true;
+            goal.completedAt = Date.now();
+
+            // Apply rewards
+            if (goal.rewards) {
+                Object.keys(goal.rewards).forEach(rewardType => {
+                    if (rewardType === 'title') {
+                        gameState.playerTitles.push(goal.rewards[rewardType]);
+                    } else if (gameState[rewardType] !== undefined) {
+                        gameState[rewardType] += goal.rewards[rewardType];
+                    }
+                });
+            }
+
+            // Move to completed goals
+            gameState.goals.completed.push(goal.id);
+            gameState.goals.active = gameState.goals.active.filter(g => g.id !== goal.id);
+
+            // Check for new goals that might be unlocked
+            const newGoals = checkUnlockedGoals(gameState);
+            gameState.goals.active.push(...newGoals);
+
+            // Show goal completion notification
+            showGoalNotification(goal);
+
+            log(`🎯 Goal Completed: ${goal.title}!`, 'success');
+
+            return {
+                success: true,
+                goal: goal,
+                rewards: goal.rewards,
+                newGoalsUnlocked: newGoals
+            };
+        };
+
+        const checkUnlockedGoals = (gameState) => {
+            const availableGoals = gameState.goals.available.filter(goal =>
+                !gameState.goals.completed.includes(goal.id) &&
+                !gameState.goals.active.some(activeGoal => activeGoal.id === goal.id)
+            );
+
+            return availableGoals.filter(goal => {
+                if (!goal.prerequisites || goal.prerequisites.length === 0) return false;
+
+                return goal.prerequisites.every(prereqId =>
+                    gameState.goals.completed.includes(prereqId)
+                );
+            });
+        };
+
+        const updateStatistics = (eventType, data = {}) => {
+            const stats = gameState.statistics;
+
+            switch (eventType) {
+                case 'unit_created':
+                    stats.totalUnitsCreated += 1;
+                    break;
+                case 'energy_generated':
+                    stats.totalEnergyGenerated += data.amount || 0;
+                    stats.maxEnergy = Math.max(stats.maxEnergy, gameState.energy);
+                    break;
+                case 'insight_generated':
+                    stats.totalInsightGenerated += data.amount || 0;
+                    stats.maxInsight = Math.max(stats.maxInsight, gameState.insight);
+                    break;
+                case 'interaction_occurred':
+                    stats.totalInteractions += 1;
+                    break;
+                case 'conversation_started':
+                    stats.totalConversations += 1;
+                    break;
+                case 'harmony_changed':
+                    stats.maxHarmony = Math.max(stats.maxHarmony, gameState.harmony);
+                    break;
+            }
+
+            // Update play time
+            stats.playTime = Date.now() - stats.gameStartTime;
+        };
+
+        const checkAchievementsAndGoals = () => {
+            // Check achievements
+            Object.values(gameState.achievements.definitions).forEach(achievement => {
+                const result = checkAchievementProgress(achievement, gameState);
+                if (result.shouldUnlock) {
+                    unlockAchievement(achievement, gameState);
+                }
+            });
+
+            // Check active goals
+            gameState.goals.active.forEach(goal => {
+                const result = updateGoalProgress(goal, gameState);
+                if (result.shouldComplete) {
+                    completeGoal(goal, gameState);
+                }
+            });
+        };
+
+        const showAchievementNotification = (achievement) => {
+            const notification = document.createElement('div');
+            notification.className = 'achievement-notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #FFD700, #FFA500);
+                color: #000;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+                z-index: 1000;
+                font-family: 'Inter', sans-serif;
+                max-width: 300px;
+                animation: slideInRight 0.5s ease-out;
+            `;
+
+            const rarityColors = {
+                common: '#10B981',
+                uncommon: '#3B82F6',
+                rare: '#8B5CF6',
+                legendary: '#F59E0B'
+            };
+
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 24px; margin-right: 10px;">🏆</span>
+                    <div>
+                        <div style="font-weight: bold; font-size: 16px;">Achievement Unlocked!</div>
+                        <div style="font-size: 12px; opacity: 0.8; color: ${rarityColors[achievement.rarity] || '#666'};">${achievement.rarity?.toUpperCase() || 'COMMON'}</div>
+                    </div>
+                </div>
+                <div style="font-weight: bold; margin-bottom: 5px;">${achievement.name}</div>
+                <div style="font-size: 14px; margin-bottom: 10px;">${achievement.description}</div>
+                ${achievement.rewards ? `<div style="font-size: 12px; opacity: 0.9;">Rewards: ${formatRewards(achievement.rewards)}</div>` : ''}
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.5s ease-in';
+                setTimeout(() => notification.remove(), 500);
+            }, 5000);
+        };
+
+        const showGoalNotification = (goal) => {
+            const notification = document.createElement('div');
+            notification.className = 'goal-notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #10B981, #059669);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+                z-index: 1000;
+                font-family: 'Inter', sans-serif;
+                max-width: 300px;
+                animation: slideInRight 0.5s ease-out;
+            `;
+
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 24px; margin-right: 10px;">🎯</span>
+                    <div>
+                        <div style="font-weight: bold; font-size: 16px;">Goal Completed!</div>
+                        <div style="font-size: 12px; opacity: 0.8;">${goal.category?.toUpperCase() || 'MAIN'}</div>
+                    </div>
+                </div>
+                <div style="font-weight: bold; margin-bottom: 5px;">${goal.title}</div>
+                <div style="font-size: 14px; margin-bottom: 10px;">${goal.description}</div>
+                ${goal.rewards ? `<div style="font-size: 12px; opacity: 0.9;">Rewards: ${formatRewards(goal.rewards)}</div>` : ''}
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 4 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.5s ease-in';
+                setTimeout(() => notification.remove(), 500);
+            }, 4000);
+        };
+
+        const formatRewards = (rewards) => {
+            return Object.entries(rewards).map(([type, amount]) => {
+                if (type === 'title') return `"${amount}"`;
+                return `+${amount} ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            }).join(', ');
+        };
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        const updateProgressUI = () => {
+            // Update achievement count
+            const achievementCount = gameState.achievements.unlocked.length;
+            const achievementCountEl = document.getElementById('achievement-count');
+            if (achievementCountEl) achievementCountEl.textContent = achievementCount;
+
+            // Update goals completed count
+            const goalsCompletedCount = gameState.goals.completed.length;
+            const goalsCompletedCountEl = document.getElementById('goals-completed-count');
+            if (goalsCompletedCountEl) goalsCompletedCountEl.textContent = goalsCompletedCount;
+
+            // Update play time
+            const playTimeMinutes = Math.floor(gameState.statistics.playTime / 60000);
+            const playTimeEl = document.getElementById('play-time');
+            if (playTimeEl) playTimeEl.textContent = `${playTimeMinutes}m`;
+
+            // Update active goals
+            updateActiveGoalsUI();
+
+            // Update recent achievements
+            updateRecentAchievementsUI();
+        };
+
+        const updateActiveGoalsUI = () => {
+            const container = document.getElementById('active-goals');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            gameState.goals.active.slice(0, 3).forEach(goal => {
+                const progressPercent = Math.min(100, (goal.progress / goal.target) * 100);
+
+                const goalEl = document.createElement('div');
+                goalEl.className = 'p-2 bg-indigo-900/20 rounded text-xs';
+                goalEl.innerHTML = `
+                    <div class="font-medium text-white">${goal.title}</div>
+                    <div class="text-indigo-300 mb-1">${goal.description}</div>
+                    <div class="w-full bg-gray-700 rounded-full h-1.5 mb-1">
+                        <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <div class="text-indigo-400">${goal.progress}/${goal.target} (${progressPercent.toFixed(0)}%)</div>
+                `;
+                container.appendChild(goalEl);
+            });
+
+            if (gameState.goals.active.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-xs">No active goals</div>';
+            }
+        };
+
+        const updateRecentAchievementsUI = () => {
+            const container = document.getElementById('recent-achievements');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            const recentAchievements = gameState.achievements.unlocked
+                .map(id => gameState.achievements.definitions[id])
+                .filter(a => a && a.unlocked)
+                .sort((a, b) => (b.unlockedAt || 0) - (a.unlockedAt || 0))
+                .slice(0, 3);
+
+            recentAchievements.forEach(achievement => {
+                const rarityColors = {
+                    common: '#10B981',
+                    uncommon: '#3B82F6',
+                    rare: '#8B5CF6',
+                    legendary: '#F59E0B'
+                };
+
+                const achievementEl = document.createElement('div');
+                achievementEl.className = 'p-2 bg-yellow-900/20 rounded text-xs';
+                achievementEl.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="mr-2">🏆</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-white">${achievement.name}</div>
+                            <div class="text-yellow-300">${achievement.description}</div>
+                            <div class="text-xs" style="color: ${rarityColors[achievement.rarity] || '#10B981'}">${achievement.rarity?.toUpperCase() || 'COMMON'}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(achievementEl);
+            });
+
+            if (recentAchievements.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-xs">No achievements yet</div>';
+            }
         };
 
         // --- Grok API Integration with Popup ---
@@ -4023,6 +4674,9 @@
                 case '4':
                     switchTab('ai');
                     break;
+                case '5':
+                    switchTab('progress');
+                    break;
                 case 'd':
                 case 'D':
                     if (gameState.energy >= gameState.unitCosts.dreamers) {
@@ -4120,6 +4774,9 @@
                 // TDD Task 1: Add movable sprite for the new unit
                 addSprite(key, 1);
 
+                // TDD: Track statistics for achievements
+                updateStatistics('unit_created');
+
                 // TDD Fix: Don't immediately re-render UI, let game loop handle it
             }
         };
@@ -4161,8 +4818,22 @@
             gameState.insightPerSecond = insightPerSecond;
 
             // Add resources
-            gameState.energy += energyPerSecond * delta;
-            gameState.insight += insightPerSecond * delta;
+            const energyGained = energyPerSecond * delta;
+            const insightGained = insightPerSecond * delta;
+
+            gameState.energy += energyGained;
+            gameState.insight += insightGained;
+
+            // TDD: Track statistics for achievements
+            if (energyGained > 0) {
+                updateStatistics('energy_generated', { amount: energyGained });
+            }
+            if (insightGained > 0) {
+                updateStatistics('insight_generated', { amount: insightGained });
+            }
+            if (gameState.harmony !== gameState.statistics.maxHarmony) {
+                updateStatistics('harmony_changed');
+            }
         };
 
         let lastUIUpdate = 0;
@@ -4175,6 +4846,7 @@
             // TDD Fix: Update UI less frequently to prevent button blinking
             if (now - lastUIUpdate > 500) { // Increased from 100ms to 500ms
                 renderUI();
+                updateProgressUI(); // TDD: Update achievements and goals UI
                 lastUIUpdate = now;
             }
             drawSanctuary();
@@ -4216,6 +4888,11 @@
         const init = () => {
             log("Welcome, Weaver. The sanctuary awakens with your first Dreamer and Weaver.", "success");
             log("🔑 Grok API integration ready - key will be requested when needed", "info");
+
+            // TDD: Initialize Achievement & Goals System
+            initializeAchievements();
+            initializeGoals();
+            log("🏆 Achievement & Goals system initialized", "info");
 
             // Initialize sprites
             addSprite('dome', 1);
@@ -4410,6 +5087,9 @@
                         selectedConversationalUnit = conversationalUnit;
                         createConversationDialog(conversationalUnit);
                         log(`Started conversation with ${conversationalUnit.type}`, 'info');
+
+                        // TDD: Track statistics for achievements
+                        updateStatistics('conversation_started');
                     }
                 }
 
