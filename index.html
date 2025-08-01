@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resonant Sanctuary: The Weaver</title>
+    <title>TerraFlow: Roots of Transition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -113,6 +113,26 @@
             transform: translateY(-1px);
             background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(99, 102, 241, 0.1));
         }
+
+        /* Compact Stats Styling */
+        .stat-compact {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+
+        .stat-mini {
+            text-align: center;
+            padding: 4px;
+            border-radius: 4px;
+            background: rgba(75, 85, 99, 0.3);
+            transition: background 0.2s ease;
+        }
+
+        .stat-mini:hover {
+            background: rgba(75, 85, 99, 0.5);
+        }
         .stat-value {
             font-size: 1.1rem;
             font-weight: bold;
@@ -203,6 +223,48 @@
             }
         }
 
+        /* Gardener Path Building Styling */
+        .gardener-building-tier-1 {
+            border-left: 3px solid #059669;
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(6, 78, 59, 0.05));
+        }
+
+        .gardener-building-tier-2 {
+            border-left: 3px solid #047857;
+            background: linear-gradient(135deg, rgba(4, 120, 87, 0.15), rgba(6, 78, 59, 0.08));
+            box-shadow: 0 0 5px rgba(5, 150, 105, 0.3);
+        }
+
+        .gardener-building-tier-3 {
+            border-left: 3px solid #065F46;
+            background: linear-gradient(135deg, rgba(6, 95, 70, 0.2), rgba(6, 78, 59, 0.1));
+            box-shadow: 0 0 8px rgba(5, 150, 105, 0.4);
+            animation: enlightenedPulse 3s infinite;
+        }
+
+        .gardener-building-tier-4 {
+            border-left: 3px solid #064E3B;
+            background: linear-gradient(135deg, rgba(6, 78, 59, 0.3), rgba(4, 120, 87, 0.15));
+            box-shadow: 0 0 12px rgba(5, 150, 105, 0.6);
+            animation: ascensionPulse 2s infinite;
+        }
+
+        @keyframes enlightenedPulse {
+            0%, 100% { box-shadow: 0 0 8px rgba(5, 150, 105, 0.4); }
+            50% { box-shadow: 0 0 15px rgba(5, 150, 105, 0.7); }
+        }
+
+        @keyframes ascensionPulse {
+            0%, 100% {
+                box-shadow: 0 0 12px rgba(5, 150, 105, 0.6);
+                border-left-color: #064E3B;
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(5, 150, 105, 0.9);
+                border-left-color: #059669;
+            }
+        }
+
         /* Great Transition Progress Styling */
         .great-transition-progress {
             border-left: 3px solid #F59E0B; /* Golden border for the ultimate goal */
@@ -232,6 +294,33 @@
             100% { transform: translateX(100%); }
         }
 
+        /* Crisis Level Indicator Styling */
+        .crisis-indicator {
+            border-left: 3px solid #EF4444; /* Red border for crisis */
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(153, 27, 27, 0.08));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .crisis-indicator:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(153, 27, 27, 0.1));
+        }
+
+        .crisis-indicator.crisis-high {
+            animation: crisisWarning 2s infinite;
+        }
+
+        @keyframes crisisWarning {
+            0%, 100% {
+                box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+                border-left-color: #EF4444;
+            }
+            50% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+                border-left-color: #DC2626;
+            }
+        }
+
         /* Tooltip styles */
         .tooltip {
             position: relative;
@@ -257,7 +346,7 @@
 
     <!-- Top Bar -->
     <header class="w-full p-4 bg-[#1c1944] border-b border-indigo-900 shadow-lg z-10">
-        <h1 class="text-2xl font-bold text-white">Resonant Sanctuary: The Weaver</h1>
+        <h1 class="text-2xl font-bold text-white">TerraFlow: Roots of Transition</h1>
     </header>
 
     <!-- Main Content -->
@@ -436,8 +525,14 @@
 
                         <!-- Path of the Gardeners -->
                         <div class="border border-green-600 rounded-lg p-3 bg-green-900/20">
-                            <h4 class="font-bold text-green-400 mb-2">🌱 Path of the Gardeners (Tree of Life)</h4>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-green-400">🌱 Path of the Gardeners (Tree of Life)</h4>
+                                <span id="gardener-building-count" class="text-xs bg-green-800 text-green-200 px-2 py-1 rounded">0 Built</span>
+                            </div>
                             <p class="text-xs text-green-300 mb-3">Sustainable growth through consciousness and harmony. Generates Consciousness but reduces Control.</p>
+                            <div class="text-xs text-green-500 mb-3">
+                                ✨ Note: Higher tiers lead to increasingly enlightened outcomes
+                            </div>
                             <div id="gardener-buildings" class="space-y-2">
                                 <!-- Gardener buildings will be populated here -->
                             </div>
@@ -455,60 +550,90 @@
 
         <!-- Center Panel: Village View & Compact Stats -->
         <main class="flex-1 flex flex-col p-3">
-            <!-- Compact Stats Bar -->
-            <div id="stats-bar" class="mb-3">
-                <div class="stat-grid">
-                    <div class="stat-card tooltip" data-tooltip="Energy - Used to create Dreamers (Hotkey: D)">
-                        <div class="stat-value" id="energy">20</div>
-                        <div class="stat-label">Energy</div>
-                        <div class="stat-rate">+<span id="energy-rate">0.0</span>/s</div>
+            <!-- Compact Horizontal Stats Bar -->
+            <div id="stats-bar" class="mb-2">
+                <div class="flex items-center justify-between bg-gray-900 rounded-lg p-2 border border-gray-700">
+                    <!-- Core Resources (Always Visible) -->
+                    <div class="flex space-x-4">
+                        <div class="stat-compact tooltip" data-tooltip="Energy - Used to create Dreamers">
+                            <span class="text-blue-400 font-bold" id="energy">20</span>
+                            <span class="text-xs text-gray-400">Energy</span>
+                            <span class="text-xs text-blue-300">+<span id="energy-rate">0.0</span>/s</span>
+                        </div>
+                        <div class="stat-compact tooltip" data-tooltip="Insight - Used to create Weavers">
+                            <span class="text-purple-400 font-bold" id="insight">5</span>
+                            <span class="text-xs text-gray-400">Insight</span>
+                            <span class="text-xs text-purple-300">+<span id="insight-rate">0.0</span>/s</span>
+                        </div>
+                        <div class="stat-compact tooltip" data-tooltip="Consciousness vs Control - The Great Transition balance">
+                            <span class="text-green-400 font-bold" id="consciousness">10</span>
+                            <span class="text-xs text-gray-400">Consciousness</span>
+                            <span class="text-red-400 font-bold" id="control">0</span>
+                            <span class="text-xs text-gray-400">Control</span>
+                        </div>
+                        <div class="stat-compact tooltip great-transition-progress" data-tooltip="Planetary Consciousness - Reach 100 for victory!">
+                            <span class="text-yellow-400 font-bold text-lg" id="planetary-consciousness">10</span>
+                            <span class="text-xs text-gray-400">Planetary</span>
+                        </div>
                     </div>
-                    <div class="stat-card tooltip" data-tooltip="Insight - Used to create Weavers (Hotkey: W)">
-                        <div class="stat-value" id="insight">5</div>
-                        <div class="stat-label">Insight</div>
-                        <div class="stat-rate">+<span id="insight-rate">0.0</span>/s</div>
-                    </div>
-                    <div class="stat-card tooltip" data-tooltip="Harmony - Affects all production efficiency">
-                        <div class="stat-value" id="harmony">75</div>
-                        <div class="stat-label">Harmony</div>
-                        <div class="stat-rate">Stable</div>
-                    </div>
-                    <div class="stat-card tooltip" data-tooltip="Inspiration - Generated by unit interactions">
-                        <div class="stat-value" id="inspiration">0</div>
-                        <div class="stat-label">Inspiration</div>
-                        <div class="stat-rate">+<span id="inspiration-rate">0.0</span>/s</div>
-                    </div>
-                    <div class="stat-card tooltip" data-tooltip="Wisdom - Generated by philosophical beings">
-                        <div class="stat-value" id="wisdom">0</div>
-                        <div class="stat-label">Wisdom</div>
-                        <div class="stat-rate">+<span id="wisdom-rate">0.0</span>/s</div>
-                    </div>
-                    <div class="stat-card tooltip control-resource" data-tooltip="Control - Suppresses unrest but reduces consciousness. Generated by Ruler buildings.">
-                        <div class="stat-value" id="control">0</div>
-                        <div class="stat-label">Control</div>
-                        <div class="stat-rate">+<span id="control-rate">0.0</span>/s</div>
-                    </div>
-                    <div class="stat-card tooltip consciousness-resource" data-tooltip="Consciousness - Improves well-being and unlocks advanced technologies. Generated by Gardener buildings.">
-                        <div class="stat-value" id="consciousness">10</div>
-                        <div class="stat-label">Consciousness</div>
-                        <div class="stat-rate">+<span id="consciousness-rate">0.0</span>/s</div>
-                    </div>
-                    <div class="stat-card tooltip great-transition-progress" data-tooltip="Planetary Consciousness - The Great Transition goal. Reach 100 to achieve humanity's awakening!">
-                        <div class="stat-value" id="planetary-consciousness">10</div>
-                        <div class="stat-label">Planetary Consciousness</div>
-                        <div class="stat-rate">The Great Transition</div>
-                    </div>
-                    <div class="stat-card tooltip" data-tooltip="Total active units in your sanctuary">
-                        <div class="stat-value" id="total-units">0</div>
-                        <div class="stat-label">Total Units</div>
-                        <div class="stat-rate">Active</div>
+
+                    <!-- Toggle Button for Extended Stats -->
+                    <button id="stats-toggle" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded border border-gray-600" title="Show/Hide Extended Stats">
+                        📊 More
+                    </button>
+                </div>
+
+                <!-- Extended Stats (Collapsible) -->
+                <div id="extended-stats" class="hidden mt-2 bg-gray-900 rounded-lg p-2 border border-gray-700">
+                    <div class="grid grid-cols-6 gap-2">
+                        <div class="stat-mini tooltip" data-tooltip="Harmony - Affects all production efficiency">
+                            <div class="text-sm font-bold text-green-300" id="harmony">75</div>
+                            <div class="text-xs text-gray-400">Harmony</div>
+                        </div>
+                        <div class="stat-mini tooltip" data-tooltip="Inspiration - Generated by unit interactions">
+                            <div class="text-sm font-bold text-pink-300" id="inspiration">0</div>
+                            <div class="text-xs text-gray-400">Inspiration</div>
+                        </div>
+                        <div class="stat-mini tooltip" data-tooltip="Wisdom - Generated by philosophical beings">
+                            <div class="text-sm font-bold text-indigo-300" id="wisdom">0</div>
+                            <div class="text-xs text-gray-400">Wisdom</div>
+                        </div>
+                        <div class="stat-mini tooltip crisis-indicator" data-tooltip="Crisis Level - High levels trigger the Four Horsemen">
+                            <div class="text-sm font-bold text-red-300" id="crisis-level">0</div>
+                            <div class="text-xs text-gray-400">Crisis</div>
+                        </div>
+                        <div class="stat-mini tooltip" data-tooltip="Total active units in your sanctuary">
+                            <div class="text-sm font-bold text-cyan-300" id="total-units">0</div>
+                            <div class="text-xs text-gray-400">Units</div>
+                        </div>
+                        <div class="stat-mini">
+                            <div class="text-xs text-gray-500">Zoom: <span id="zoom-level">100%</span></div>
+                            <div class="text-xs text-gray-500">Units: <span id="visible-units">0</span>/<span id="total-units-mini">0</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Village Canvas -->
             <div class="flex-1 relative">
-                 <canvas id="village-canvas" class="w-full h-full"></canvas>
+                <canvas id="village-canvas" class="w-full h-full"></canvas>
+
+                <!-- Canvas Controls -->
+                <div class="absolute top-2 right-2 flex flex-col space-y-1">
+                    <button id="zoom-in-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600" title="Zoom In">🔍+</button>
+                    <button id="zoom-out-btn" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded border border-gray-600" title="Zoom Out">🔍-</button>
+                    <button id="reset-view-btn" class="bg-green-800 hover:bg-green-700 text-white text-xs px-2 py-1 rounded border border-green-600" title="Reset View & Add Units">🎯 RESET</button>
+                    <button id="auto-arrange-btn" class="bg-blue-800 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded border border-blue-600" title="Auto-Arrange Units">📐</button>
+                    <button id="add-units-btn" class="bg-purple-800 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded border border-purple-600" title="Add Test Units">➕ UNITS</button>
+                </div>
+
+
+
+                <!-- Minimap -->
+                <div class="absolute bottom-2 right-2 bg-black bg-opacity-70 border border-gray-600 rounded">
+                    <div class="text-xs text-gray-400 px-2 py-1 border-b border-gray-600">Minimap</div>
+                    <canvas id="minimap-canvas" width="120" height="90" class="block"></canvas>
+                </div>
             </div>
         </main>
 
@@ -651,14 +776,25 @@
                 corporateState: 0,
                 memoryWipe: 0,
                 // Tier 4: Ultimate
-                totalitarianCore: 0
+                totalitarianCore: 0,
+                // Tier 5: Victory
+                exodusArk: 0
             },
             gardenerBuildings: {
+                // Tier 1: Seeds
                 stoneCircle: 0,
                 healingGrove: 0,
-                wisdomSanctuary: 0,
                 permacultureGarden: 0,
-                mycelialNetwork: 0
+                // Tier 2: Growing
+                wisdomSanctuary: 0,
+                mycelialNetwork: 0,
+                communityCouncil: 0,
+                // Tier 3: Awakening
+                planetaryAwakening: 0,
+                sacredGeometry: 0,
+                livingLibrary: 0,
+                // Tier 4: Ascension
+                theAscension: 0
             },
             techTreeUnlocked: false, // Unlocks when certain conditions are met
             gameEnded: false, // Prevents repeated victory/defeat messages
@@ -672,6 +808,12 @@
             rulerPathProgress: 0, // Progress toward Ruler victory
             gardenerPathProgress: 0, // Progress toward Gardener victory
             dominantPath: 'none', // 'ruler', 'gardener', or 'balanced'
+
+            // TDD: Four Horsemen Crisis System
+            crisisLevel: 0, // 0-100, triggers horsemen at certain thresholds
+            activeCrises: [], // Array of active crisis objects
+            horsemenDefeated: [], // Array of defeated horsemen
+            lastCrisisTime: 0, // Timestamp of last crisis
             villageGrid: [],
             stars: [],
             intelligentCreatures: [], // TDD: Intelligent creatures with AI behaviors
@@ -862,54 +1004,139 @@
                 category: 'ultimate',
                 tier: 4,
                 unlockCondition: () => gameState.rulerBuildings.memoryWipe > 0 && gameState.control > 50
+            },
+
+            // Tier 5: The Exodus (Victory Condition)
+            exodusArk: {
+                name: "Exodus Ark",
+                description: "The ultimate escape vessel. Leave this dying world behind and join the galactic empire.",
+                costResource: 'energy',
+                cost: 1000,
+                effects: { rulerPathProgress: 100 }, // Triggers Ruler victory
+                path: 'ruler',
+                category: 'victory',
+                tier: 5,
+                unlockCondition: () => gameState.rulerBuildings.totalitarianCore > 0 && gameState.control > 80 && gameState.trueLoreRevealed
             }
         };
 
         const gardenerPathBuildings = {
+            // Tier 1: Seeds of Consciousness (Early Game)
             stoneCircle: {
                 name: "Stone Circle",
-                description: "Ancient gathering place that enhances collective consciousness.",
+                description: "Ancient gathering place that enhances collective consciousness and spiritual connection.",
                 costResource: 'wisdom',
                 cost: 40,
                 effects: { consciousness: 2, wisdom: 0.5, harmony: 1, control: -0.2 },
                 path: 'gardener',
-                category: 'spiritual'
+                category: 'spiritual',
+                tier: 1,
+                unlockCondition: () => true // Always available
             },
             healingGrove: {
                 name: "Healing Grove",
-                description: "Natural sanctuary that restores balance and awareness.",
+                description: "Natural sanctuary that restores balance and awareness through nature's healing power.",
                 costResource: 'inspiration',
                 cost: 50,
                 effects: { consciousness: 1.5, harmony: 2, consciousnessPerSecond: 0.1, entropy: -0.1 },
                 path: 'gardener',
-                category: 'healing'
-            },
-            wisdomSanctuary: {
-                name: "Wisdom Sanctuary",
-                description: "Center of learning that develops deep understanding.",
-                costResource: 'insight',
-                cost: 80,
-                effects: { consciousness: 3, wisdom: 1, wisdomPerSecond: 0.2, control: -0.5 },
-                path: 'gardener',
-                category: 'knowledge'
+                category: 'healing',
+                tier: 1,
+                unlockCondition: () => true // Always available
             },
             permacultureGarden: {
                 name: "Permaculture Garden",
-                description: "Sustainable food system that connects people to nature.",
+                description: "Sustainable food system that connects people to nature and traditional wisdom.",
                 costResource: 'harmony',
                 cost: 45,
                 effects: { consciousness: 1, harmony: 1.5, inspirationPerSecond: 0.15, entropy: -0.05 },
                 path: 'gardener',
-                category: 'sustainability'
+                category: 'sustainability',
+                tier: 1,
+                unlockCondition: () => gameState.gardenerBuildings.healingGrove > 0
+            },
+
+            // Tier 2: Growing Awareness (Mid Game)
+            wisdomSanctuary: {
+                name: "Wisdom Sanctuary",
+                description: "Center of learning that develops deep understanding and philosophical insight.",
+                costResource: 'insight',
+                cost: 80,
+                effects: { consciousness: 3, wisdom: 1, wisdomPerSecond: 0.2, control: -0.5 },
+                path: 'gardener',
+                category: 'knowledge',
+                tier: 2,
+                unlockCondition: () => gameState.gardenerBuildings.stoneCircle > 0
             },
             mycelialNetwork: {
                 name: "Mycelial Network",
-                description: "Underground fungal network that enhances communication and connection.",
+                description: "Underground fungal network that enhances communication and connection between all beings.",
                 costResource: 'wisdom',
                 cost: 70,
                 effects: { consciousness: 2.5, consciousnessPerSecond: 0.2, harmony: 1, control: -1 },
                 path: 'gardener',
-                category: 'connection'
+                category: 'connection',
+                tier: 2,
+                unlockCondition: () => gameState.gardenerBuildings.wisdomSanctuary > 0
+            },
+            communityCouncil: {
+                name: "Community Council",
+                description: "Democratic decision-making body that empowers collective wisdom and shared governance.",
+                costResource: 'harmony',
+                cost: 90,
+                effects: { consciousness: 2, harmony: 3, wisdomPerSecond: 0.15, control: -2 },
+                path: 'gardener',
+                category: 'governance',
+                tier: 2,
+                unlockCondition: () => gameState.gardenerBuildings.permacultureGarden > 0
+            },
+
+            // Tier 3: Awakening Bloom (Late Game)
+            planetaryAwakening: {
+                name: "Planetary Awakening Center",
+                description: "A nexus that connects all consciousness on the planet into a unified field of awareness.",
+                costResource: 'consciousness',
+                cost: 120,
+                effects: { consciousness: 10, consciousnessPerSecond: 0.5, planetaryConsciousness: 20, control: -5 },
+                path: 'gardener',
+                category: 'awakening',
+                tier: 3,
+                unlockCondition: () => gameState.gardenerBuildings.mycelialNetwork > 0 && gameState.consciousness > 50
+            },
+            sacredGeometry: {
+                name: "Sacred Geometry Temple",
+                description: "Crystalline structures that amplify consciousness through harmonic resonance and sacred patterns.",
+                costResource: 'wisdom',
+                cost: 150,
+                effects: { consciousness: 8, consciousnessPerSecond: 0.3, harmony: 2, entropy: -0.2 },
+                path: 'gardener',
+                category: 'resonance',
+                tier: 3,
+                unlockCondition: () => gameState.gardenerBuildings.communityCouncil > 0
+            },
+            livingLibrary: {
+                name: "Living Library",
+                description: "Repository of all knowledge and wisdom, accessible to every awakened consciousness.",
+                costResource: 'insight',
+                cost: 200,
+                effects: { consciousness: 6, wisdom: 5, wisdomPerSecond: 0.4, inspirationPerSecond: 0.2 },
+                path: 'gardener',
+                category: 'knowledge',
+                tier: 3,
+                unlockCondition: () => gameState.gardenerBuildings.planetaryAwakening > 0
+            },
+
+            // Tier 4: The Great Ascension (Victory Condition)
+            theAscension: {
+                name: "The Great Ascension",
+                description: "Complete the planetary transformation. Awaken all beings to their true nature and cosmic unity.",
+                costResource: 'wisdom',
+                cost: 500,
+                effects: { gardenerPathProgress: 100 }, // Triggers Gardener victory
+                path: 'gardener',
+                category: 'victory',
+                tier: 4,
+                unlockCondition: () => gameState.gardenerBuildings.livingLibrary > 0 && gameState.consciousness > 80 && gameState.trueLoreRevealed
             }
         };
 
@@ -962,6 +1189,8 @@
             const controlEl = document.getElementById('control');
             const consciousnessEl = document.getElementById('consciousness');
             const planetaryConsciousnessEl = document.getElementById('planetary-consciousness');
+            const crisisLevelEl = document.getElementById('crisis-level');
+            const crisisStatusEl = document.getElementById('crisis-status');
             const energyRateEl = document.getElementById('energy-rate');
             const insightRateEl = document.getElementById('insight-rate');
             const inspirationRateEl = document.getElementById('inspiration-rate');
@@ -1216,23 +1445,93 @@
             vignette: { enabled: true, intensity: 0.2 }
         };
 
-        const drawSanctuary = () => {
+        // --- TDD: Screen Real Estate Management ---
+
+        let canvasState = {
+            width: 800,
+            height: 600,
+            safeZone: { left: 50, right: 50, top: 50, bottom: 50 },
+            zoom: 1.0,
+            panX: 0,
+            panY: 0
+        };
+
+        const updateCanvasSize = () => {
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            const newWidth = Math.max(600, rect.width); // Minimum width
+            const newHeight = Math.max(400, rect.height); // Minimum height
+
+            // Only update if size changed significantly
+            if (Math.abs(canvas.width - newWidth) > 10 || Math.abs(canvas.height - newHeight) > 10) {
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+                canvasState.width = newWidth;
+                canvasState.height = newHeight;
+
+                // Reposition units that are now off-screen
+                repositionOffScreenUnits();
+            }
+        };
+
+        const repositionOffScreenUnits = () => {
+            const safeWidth = canvasState.width - canvasState.safeZone.left - canvasState.safeZone.right;
+            const safeHeight = canvasState.height - canvasState.safeZone.top - canvasState.safeZone.bottom;
+
+            gameState.villageGrid.forEach(unit => {
+                if (unit.x < canvasState.safeZone.left ||
+                    unit.x > canvasState.width - canvasState.safeZone.right ||
+                    unit.y < canvasState.safeZone.top ||
+                    unit.y > canvasState.height - canvasState.safeZone.bottom) {
+
+                    // Reposition to safe zone
+                    unit.x = canvasState.safeZone.left + Math.random() * safeWidth;
+                    unit.y = canvasState.safeZone.top + Math.random() * safeHeight;
+
+                    // Update movement targets
+                    if (unit.targetX !== undefined) {
+                        unit.targetX = unit.x;
+                        unit.targetY = unit.y;
+                    }
+                    if (unit.wanderCenter) {
+                        unit.wanderCenter = { x: unit.x, y: unit.y };
+                    }
+                }
+            });
+        };
+
+        const drawSanctuary = () => {
+            // Safety check
+            if (!canvas || !ctx) {
+                console.error('Canvas or context not available');
+                return;
+            }
+
+            updateCanvasSize();
             animationTime += 0.016; // ~60fps
 
-            // Enhanced Background with nebula effect
+            // Clear the entire canvas first
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw a simple test background first to ensure canvas is working
+            ctx.fillStyle = '#0a0820';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Enhanced Background with nebula effect (not affected by zoom/pan)
             drawBackground();
 
-            // Enhanced Stars with twinkling
+            // Enhanced Stars with twinkling (not affected by zoom/pan)
             drawStars();
 
-            // Floating particles for magical atmosphere
+            // Floating particles for magical atmosphere (not affected by zoom/pan)
             updateAndDrawParticles();
 
-            // Energy/Insight flow lines
+            // Energy/Insight flow lines (not affected by zoom/pan)
             drawEnergyFlows();
+
+            // Apply zoom and pan transformations for units only
+            ctx.save();
+            ctx.translate(canvasState.panX, canvasState.panY);
+            ctx.scale(canvasState.zoom, canvasState.zoom);
 
             // TDD Task 1: Update unit movement and draw enhanced sprites
             updateUnitMovement(0.016);
@@ -1265,6 +1564,18 @@
                 checkBuildingUnlocks();
             }
 
+            // TDD: Check story progression
+            if (Math.random() < 0.01) { // Check every ~100 frames
+                checkStoryProgression();
+            }
+
+            // TDD: Update crisis system
+            if (Math.random() < 0.05) { // Check every ~20 frames
+                updateCrisisLevel();
+                checkForNewCrises();
+                checkCrisisResolution();
+            }
+
             gameState.villageGrid.sort((a, b) => a.y - b.y);
             gameState.villageGrid.forEach(item => {
                 const isHovered = dragState.hoveredUnit === item;
@@ -1293,6 +1604,333 @@
 
             // Ambient light effects
             drawAmbientEffects();
+
+            // Restore transformation matrix
+            ctx.restore();
+
+            // Draw UI elements that should not be affected by zoom/pan
+            drawCanvasUI();
+
+            // Draw minimap
+            drawMinimap();
+
+            // Debug: Draw rendering info
+            drawDebugInfo();
+        };
+
+        const drawCanvasUI = () => {
+            // Update zoom level display in extended stats
+            const zoomLevelEl = document.getElementById('zoom-level');
+            if (zoomLevelEl) {
+                zoomLevelEl.textContent = `${Math.round(canvasState.zoom * 100)}%`;
+            }
+
+            // Update unit count displays
+            const visibleUnitsEl = document.getElementById('visible-units');
+            const totalUnitsEl = document.getElementById('total-units');
+            const totalUnitsMiniEl = document.getElementById('total-units-mini');
+
+            if (visibleUnitsEl && totalUnitsEl) {
+                const visibleUnits = countVisibleUnits();
+                const totalUnits = gameState.villageGrid.length;
+                visibleUnitsEl.textContent = visibleUnits;
+                totalUnitsEl.textContent = totalUnits;
+                if (totalUnitsMiniEl) {
+                    totalUnitsMiniEl.textContent = totalUnits;
+                }
+            }
+        };
+
+        const countVisibleUnits = () => {
+            const viewLeft = -canvasState.panX / canvasState.zoom;
+            const viewTop = -canvasState.panY / canvasState.zoom;
+            const viewRight = viewLeft + canvasState.width / canvasState.zoom;
+            const viewBottom = viewTop + canvasState.height / canvasState.zoom;
+
+            return gameState.villageGrid.filter(unit => {
+                return unit.x >= viewLeft - unit.size &&
+                       unit.x <= viewRight + unit.size &&
+                       unit.y >= viewTop - unit.size &&
+                       unit.y <= viewBottom + unit.size;
+            }).length;
+        };
+
+        // --- Canvas Control Functions ---
+
+        const zoomIn = () => {
+            canvasState.zoom = Math.min(3.0, canvasState.zoom * 1.2);
+        };
+
+        const zoomOut = () => {
+            canvasState.zoom = Math.max(0.3, canvasState.zoom / 1.2);
+        };
+
+        const resetView = () => {
+            canvasState.zoom = 1.0;
+
+            // Add units if none exist
+            if (gameState.villageGrid.length === 0) {
+                addSprite('dreamer', 3);
+                addSprite('weaver', 2);
+                addSprite('dome', 1);
+                addSprite('crystal_tree', 1);
+                log('🎮 Added initial units to the sanctuary', 'success');
+            }
+
+            // Center view on existing units if any
+            if (gameState.villageGrid.length > 0) {
+                let minX = Infinity, maxX = -Infinity;
+                let minY = Infinity, maxY = -Infinity;
+
+                gameState.villageGrid.forEach(unit => {
+                    minX = Math.min(minX, unit.x);
+                    maxX = Math.max(maxX, unit.x);
+                    minY = Math.min(minY, unit.y);
+                    maxY = Math.max(maxY, unit.y);
+                });
+
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+
+                canvasState.panX = canvasState.width / 2 - centerX;
+                canvasState.panY = canvasState.height / 2 - centerY;
+            } else {
+                canvasState.panX = 0;
+                canvasState.panY = 0;
+            }
+
+            log('🎯 View reset and centered on units', 'info');
+        };
+
+        const autoArrangeUnits = () => {
+            const units = gameState.villageGrid;
+            if (units.length === 0) return;
+
+            // Calculate grid layout
+            const cols = Math.ceil(Math.sqrt(units.length));
+            const rows = Math.ceil(units.length / cols);
+
+            const safeWidth = canvasState.width - canvasState.safeZone.left - canvasState.safeZone.right;
+            const safeHeight = canvasState.height - canvasState.safeZone.top - canvasState.safeZone.bottom;
+
+            const cellWidth = safeWidth / cols;
+            const cellHeight = safeHeight / rows;
+
+            units.forEach((unit, index) => {
+                const col = index % cols;
+                const row = Math.floor(index / cols);
+
+                unit.x = canvasState.safeZone.left + col * cellWidth + cellWidth / 2;
+                unit.y = canvasState.safeZone.top + row * cellHeight + cellHeight / 2;
+
+                // Update movement targets
+                if (unit.targetX !== undefined) {
+                    unit.targetX = unit.x;
+                    unit.targetY = unit.y;
+                }
+                if (unit.wanderCenter) {
+                    unit.wanderCenter = { x: unit.x, y: unit.y };
+                }
+            });
+
+            log('🎯 Units have been automatically arranged in a grid pattern.', 'info');
+        };
+
+        const addTestUnits = () => {
+            addSprite('dreamer', 2);
+            addSprite('weaver', 2);
+            addSprite('dome', 1);
+            addSprite('crystal_tree', 1);
+            addSprite('garden', 1);
+            log('➕ Added test units to the sanctuary', 'success');
+        };
+
+        const initializeCanvasControls = () => {
+            // Zoom controls
+            const zoomInBtn = document.getElementById('zoom-in-btn');
+            const zoomOutBtn = document.getElementById('zoom-out-btn');
+            const resetViewBtn = document.getElementById('reset-view-btn');
+            const autoArrangeBtn = document.getElementById('auto-arrange-btn');
+            const addUnitsBtn = document.getElementById('add-units-btn');
+
+            if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
+            if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
+            if (resetViewBtn) resetViewBtn.addEventListener('click', resetView);
+            if (autoArrangeBtn) autoArrangeBtn.addEventListener('click', autoArrangeUnits);
+            if (addUnitsBtn) addUnitsBtn.addEventListener('click', addTestUnits);
+
+            // Mouse wheel zoom
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            });
+
+            // Pan with middle mouse button or Shift+drag
+            let isPanning = false;
+            let lastPanX = 0;
+            let lastPanY = 0;
+
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle button or Shift+left
+                    isPanning = true;
+                    lastPanX = e.clientX;
+                    lastPanY = e.clientY;
+                    e.preventDefault();
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isPanning) {
+                    const deltaX = e.clientX - lastPanX;
+                    const deltaY = e.clientY - lastPanY;
+                    canvasState.panX += deltaX;
+                    canvasState.panY += deltaY;
+                    lastPanX = e.clientX;
+                    lastPanY = e.clientY;
+                }
+            });
+
+            canvas.addEventListener('mouseup', (e) => {
+                if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+                    isPanning = false;
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                switch (e.key) {
+                    case '+':
+                    case '=':
+                        zoomIn();
+                        e.preventDefault();
+                        break;
+                    case '-':
+                        zoomOut();
+                        e.preventDefault();
+                        break;
+                    case '0':
+                        resetView();
+                        e.preventDefault();
+                        break;
+                    case 'a':
+                    case 'A':
+                        if (e.ctrlKey || e.metaKey) {
+                            autoArrangeUnits();
+                            e.preventDefault();
+                        }
+                        break;
+                }
+            });
+        };
+
+        const initializeStatsToggle = () => {
+            const statsToggle = document.getElementById('stats-toggle');
+            const extendedStats = document.getElementById('extended-stats');
+
+            if (statsToggle && extendedStats) {
+                statsToggle.addEventListener('click', () => {
+                    const isHidden = extendedStats.classList.contains('hidden');
+                    if (isHidden) {
+                        extendedStats.classList.remove('hidden');
+                        statsToggle.textContent = '📊 Less';
+                        statsToggle.title = 'Hide Extended Stats';
+                    } else {
+                        extendedStats.classList.add('hidden');
+                        statsToggle.textContent = '📊 More';
+                        statsToggle.title = 'Show Extended Stats';
+                    }
+                });
+            }
+        };
+
+        // --- Minimap System ---
+
+        const drawMinimap = () => {
+            const minimapCanvas = document.getElementById('minimap-canvas');
+            if (!minimapCanvas) return;
+
+            const minimapCtx = minimapCanvas.getContext('2d');
+            const minimapWidth = minimapCanvas.width;
+            const minimapHeight = minimapCanvas.height;
+
+            // Clear minimap
+            minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            minimapCtx.fillRect(0, 0, minimapWidth, minimapHeight);
+
+            // Calculate scale
+            const scaleX = minimapWidth / canvasState.width;
+            const scaleY = minimapHeight / canvasState.height;
+            const scale = Math.min(scaleX, scaleY);
+
+            // Draw units on minimap
+            gameState.villageGrid.forEach(unit => {
+                const x = unit.x * scale;
+                const y = unit.y * scale;
+
+                minimapCtx.fillStyle = getUnitMinimapColor(unit.type);
+                minimapCtx.fillRect(x - 1, y - 1, 2, 2);
+            });
+
+            // Draw viewport indicator
+            const viewLeft = -canvasState.panX / canvasState.zoom;
+            const viewTop = -canvasState.panY / canvasState.zoom;
+            const viewWidth = canvasState.width / canvasState.zoom;
+            const viewHeight = canvasState.height / canvasState.zoom;
+
+            minimapCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            minimapCtx.lineWidth = 1;
+            minimapCtx.strokeRect(
+                viewLeft * scale,
+                viewTop * scale,
+                viewWidth * scale,
+                viewHeight * scale
+            );
+        };
+
+        const getUnitMinimapColor = (type) => {
+            const colors = {
+                'dreamer': '#8B5CF6',
+                'weaver': '#10B981',
+                'dome': '#F59E0B',
+                'crystal_tree': '#06B6D4',
+                'garden': '#84CC16',
+                'stellarNomads': '#F59E0B',
+                'voidWhisperers': '#6B7280',
+                'crystalBeings': '#10B981',
+                'plasmaDancers': '#EC4899',
+                'quantumSages': '#8B5CF6',
+                'nebulaShepherds': '#06B6D4'
+            };
+            return colors[type] || '#9CA3AF';
+        };
+
+        const drawDebugInfo = () => {
+            // Draw debug information in top-left corner
+            ctx.save();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(10, 10, 200, 120);
+
+            ctx.fillStyle = 'white';
+            ctx.font = '12px monospace';
+            ctx.fillText(`Canvas: ${canvas.width}x${canvas.height}`, 15, 25);
+            ctx.fillText(`Zoom: ${canvasState.zoom.toFixed(2)}`, 15, 40);
+            ctx.fillText(`Pan: ${canvasState.panX.toFixed(0)}, ${canvasState.panY.toFixed(0)}`, 15, 55);
+            ctx.fillText(`Units: ${gameState.villageGrid.length}`, 15, 70);
+            ctx.fillText(`Stars: ${gameState.stars.length}`, 15, 85);
+            ctx.fillText(`Animation: ${animationTime.toFixed(2)}`, 15, 100);
+
+            // Show first few unit positions
+            if (gameState.villageGrid.length > 0) {
+                ctx.fillText(`Unit 1: ${gameState.villageGrid[0].x.toFixed(0)}, ${gameState.villageGrid[0].y.toFixed(0)}`, 15, 115);
+            }
+
+            ctx.restore();
         };
 
         const drawBackground = () => {
@@ -1393,10 +2031,23 @@
             for (let i = 0; i < count; i++) {
                 const size = type === 'dome' ? 20 : type === 'crystal_tree' ? 25 : 15;
 
-                // Ensure units spawn within safe bounds considering their size
-                const margin = size + 10; // Extra margin for safety
-                const x = Math.random() * (canvas.width - 2 * margin) + margin;
-                const y = Math.random() * (canvas.height - 2 * margin) + margin;
+                // Calculate safe spawning area (in world coordinates)
+                const worldWidth = canvasState.width / canvasState.zoom;
+                const worldHeight = canvasState.height / canvasState.zoom;
+                const viewLeft = -canvasState.panX / canvasState.zoom;
+                const viewTop = -canvasState.panY / canvasState.zoom;
+
+                const safeLeft = Math.max(viewLeft + canvasState.safeZone.left / canvasState.zoom, size);
+                const safeRight = Math.min(viewLeft + worldWidth - canvasState.safeZone.right / canvasState.zoom, canvasState.width - size);
+                const safeTop = Math.max(viewTop + canvasState.safeZone.top / canvasState.zoom, size);
+                const safeBottom = Math.min(viewTop + worldHeight - canvasState.safeZone.bottom / canvasState.zoom, canvasState.height - size);
+
+                // Ensure we have valid spawning area
+                const safeWidth = Math.max(100, safeRight - safeLeft);
+                const safeHeight = Math.max(100, safeBottom - safeTop);
+
+                const x = safeLeft + Math.random() * safeWidth;
+                const y = safeTop + Math.random() * safeHeight;
 
                 // Determine if unit is movable based on type
                 const movable = ['dreamer', 'weaver', 'stellarNomads', 'voidWhisperers',
@@ -2141,7 +2792,7 @@
                 }
 
                 // Render each tier
-                for (let tier = 1; tier <= 4; tier++) {
+                for (let tier = 1; tier <= 5; tier++) {
                     if (!buildingsByTier[tier]) continue;
 
                     const tierHeader = document.createElement('div');
@@ -2204,7 +2855,8 @@
                 1: "Foundation of Control",
                 2: "Systems of Dominance",
                 3: "Instruments of Oppression",
-                4: "Ultimate Control"
+                4: "Ultimate Control",
+                5: "The Exodus"
             };
             return tierNames[tier] || "Unknown";
         };
@@ -2233,35 +2885,98 @@
             if (!gardenerBuildingsInitialized) {
                 container.innerHTML = '';
 
+                // Group buildings by tier
+                const buildingsByTier = {};
                 for (const [key, building] of Object.entries(gardenerPathBuildings)) {
-                    const card = document.createElement('div');
-                    card.className = "building-card p-2 rounded border border-green-700 bg-green-900/10";
-                    card.innerHTML = `
-                        <h5 class="font-semibold text-green-300 text-sm">${building.name}</h5>
-                        <p class="text-xs text-green-400 mb-2">${building.description}</p>
-                        <div class="text-xs text-green-500 mb-2">
-                            Effects: ${formatBuildingEffects(building.effects)}
-                        </div>
-                        <button class="gardener-btn text-xs py-1 px-2 rounded transition-colors"
-                                data-building="${key}">
-                            Build (Cost: ${building.cost} ${building.costResource})
-                        </button>
-                    `;
+                    const tier = building.tier || 1;
+                    if (!buildingsByTier[tier]) buildingsByTier[tier] = [];
+                    buildingsByTier[tier].push([key, building]);
+                }
 
-                    // Add stable event listener
-                    const button = card.querySelector('.gardener-btn');
-                    button.addEventListener('click', () => {
-                        if (!button.disabled) {
-                            buildGardenerBuilding(key);
+                // Render each tier
+                for (let tier = 1; tier <= 4; tier++) {
+                    if (!buildingsByTier[tier]) continue;
+
+                    const tierHeader = document.createElement('div');
+                    tierHeader.className = "text-xs font-bold text-green-400 mb-2 mt-3 border-b border-green-700 pb-1";
+                    tierHeader.textContent = `Tier ${tier}: ${getGardenerTierName(tier)}`;
+                    container.appendChild(tierHeader);
+
+                    for (const [key, building] of buildingsByTier[tier]) {
+                        const isUnlocked = building.unlockCondition ? building.unlockCondition() : true;
+                        const ownedCount = gameState.gardenerBuildings[key] || 0;
+
+                        const card = document.createElement('div');
+                        const tierClass = isUnlocked ? `gardener-building-tier-${building.tier}` : '';
+                        card.className = `building-card p-2 rounded border mb-2 ${tierClass} ${
+                            isUnlocked ? 'border-green-700 bg-green-900/10' : 'border-gray-700 bg-gray-900/20'
+                        }`;
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start mb-1">
+                                <h5 class="font-semibold text-sm ${isUnlocked ? 'text-green-300' : 'text-gray-500'}">${building.name}</h5>
+                                ${ownedCount > 0 ? `<span class="text-xs bg-green-800 text-green-200 px-1 rounded">${ownedCount}</span>` : ''}
+                            </div>
+                            <p class="text-xs mb-2 ${isUnlocked ? 'text-green-400' : 'text-gray-600'}">${building.description}</p>
+                            <div class="text-xs mb-2 ${isUnlocked ? 'text-green-500' : 'text-gray-600'}">
+                                Effects: ${formatBuildingEffects(building.effects)}
+                            </div>
+                            ${building.category ? `<div class="text-xs text-green-600 mb-2">Category: ${building.category}</div>` : ''}
+                            ${isUnlocked ?
+                                `<button class="gardener-btn text-xs py-1 px-2 rounded transition-colors" data-building="${key}">
+                                    Build (Cost: ${building.cost} ${building.costResource})
+                                </button>` :
+                                `<div class="text-xs text-gray-500 italic">🔒 Locked - Build prerequisite buildings</div>`
+                            }
+                        `;
+
+                        // Add stable event listener only for unlocked buildings
+                        if (isUnlocked) {
+                            const button = card.querySelector('.gardener-btn');
+                            if (button) {
+                                button.addEventListener('click', () => {
+                                    if (!button.disabled) {
+                                        buildGardenerBuilding(key);
+                                    }
+                                });
+                            }
                         }
-                    });
 
-                    container.appendChild(card);
+                        container.appendChild(card);
+                    }
                 }
                 gardenerBuildingsInitialized = true;
             }
 
             updateGardenerBuildingStates();
+            updateGardenerBuildingCount();
+        };
+
+        const getGardenerTierName = (tier) => {
+            const tierNames = {
+                1: "Seeds of Consciousness",
+                2: "Growing Awareness",
+                3: "Awakening Bloom",
+                4: "The Great Ascension"
+            };
+            return tierNames[tier] || "Unknown";
+        };
+
+        const updateGardenerBuildingCount = () => {
+            const countEl = document.getElementById('gardener-building-count');
+            if (countEl) {
+                const totalBuildings = Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0);
+                countEl.textContent = `${totalBuildings} Built`;
+
+                // Change color based on awakening progress
+                if (totalBuildings >= 8) {
+                    countEl.className = "text-xs bg-green-900 text-green-100 px-2 py-1 rounded border border-green-600";
+                } else if (totalBuildings >= 5) {
+                    countEl.className = "text-xs bg-green-800 text-green-200 px-2 py-1 rounded";
+                } else {
+                    countEl.className = "text-xs bg-green-700 text-green-300 px-2 py-1 rounded";
+                }
+            }
         };
 
         const formatBuildingEffects = (effects) => {
@@ -2303,6 +3018,8 @@
         // Force re-render when buildings are unlocked
         const checkBuildingUnlocks = () => {
             let newUnlocks = false;
+
+            // Check Ruler building unlocks
             for (const [key, building] of Object.entries(rulerPathBuildings)) {
                 if (building.unlockCondition() && !building._wasUnlocked) {
                     building._wasUnlocked = true;
@@ -2311,9 +3028,20 @@
                 }
             }
 
+            // Check Gardener building unlocks
+            for (const [key, building] of Object.entries(gardenerPathBuildings)) {
+                if (building.unlockCondition() && !building._wasUnlocked) {
+                    building._wasUnlocked = true;
+                    newUnlocks = true;
+                    log(`🔓 New Gardener building unlocked: ${building.name}`, 'success');
+                }
+            }
+
             if (newUnlocks) {
                 rulerBuildingsInitialized = false; // Force re-render
+                gardenerBuildingsInitialized = false; // Force re-render
                 renderRulerBuildings();
+                renderGardenerBuildings();
             }
         };
 
@@ -2426,6 +3154,31 @@
                     gameState.energyPerSecond += 0.3;
                     gameState.harmony = Math.max(0, gameState.harmony - 5);
                     break;
+
+                case 'exodusArk':
+                    log('🚀 THE EXODUS ARK IS COMPLETE!', 'warning');
+                    log('🌌 The path to the stars opens before you. The galactic empire awaits.', 'info');
+                    log('⚡ Initiating departure sequence...', 'warning');
+                    // Victory is triggered by the rulerPathProgress effect
+                    break;
+            }
+        };
+
+        const applySpecialGardenerEffects = (buildingKey, building) => {
+            switch (buildingKey) {
+                case 'planetaryAwakening':
+                    log('🌍 The planetary consciousness field activates!', 'success');
+                    log('✨ All beings begin to sense their connection to the greater whole.', 'success');
+                    // Boost consciousness generation globally
+                    gameState.consciousnessPerSecond += 0.2;
+                    break;
+
+                case 'theAscension':
+                    log('🌟 THE GREAT ASCENSION BEGINS!', 'success');
+                    log('🌈 Consciousness cascades across the planet like waves of light.', 'success');
+                    log('🦋 Every being awakens to their true nature. The transformation is complete.', 'success');
+                    // Victory is triggered by the gardenerPathProgress effect
+                    break;
             }
         };
 
@@ -2443,6 +3196,9 @@
                 // Track statistics
                 updateStatistics('gardener_path_choice');
 
+                // Special effects for high-tier gardener buildings
+                applySpecialGardenerEffects(buildingKey, building);
+
                 log(`🌱 Built ${building.name}! The path of consciousness grows.`, 'success');
 
                 // Save progress after building construction
@@ -2454,7 +3210,10 @@
 
         const applyBuildingEffects = (effects) => {
             for (const [resource, amount] of Object.entries(effects)) {
-                if (resource.endsWith('PerSecond')) {
+                if (resource === 'rulerPathProgress' || resource === 'gardenerPathProgress') {
+                    // Handle victory progress
+                    gameState[resource] = Math.max(0, gameState[resource] + amount);
+                } else if (resource.endsWith('PerSecond')) {
                     // Handle per-second effects
                     const baseResource = resource.replace('PerSecond', '');
                     if (gameState[resource] !== undefined) {
@@ -2683,9 +3442,18 @@
 
         const getCanvasCoordinates = (event) => {
             const rect = canvas.getBoundingClientRect();
+            const canvasX = event.clientX - rect.left;
+            const canvasY = event.clientY - rect.top;
+
+            // Convert screen coordinates to world coordinates (accounting for zoom/pan)
+            const worldX = (canvasX - canvasState.panX) / canvasState.zoom;
+            const worldY = (canvasY - canvasState.panY) / canvasState.zoom;
+
             return {
-                x: event.clientX - rect.left,
-                y: event.clientY - rect.top
+                x: worldX,
+                y: worldY,
+                screenX: canvasX,
+                screenY: canvasY
             };
         };
 
@@ -5592,9 +6360,22 @@
                 return true;
             }
 
-            // Win condition: Planetary Consciousness reaches 100
-            if (gameState.planetaryConsciousness >= 100) {
-                showGreatTransitionVictory();
+            // Check for story-driven victory conditions
+            if (gameState.rulerPathProgress >= 100) {
+                showRulerVictory();
+                gameState.gameEnded = true;
+                return true;
+            }
+
+            if (gameState.gardenerPathProgress >= 100) {
+                showGardenerVictory();
+                gameState.gameEnded = true;
+                return true;
+            }
+
+            // Legacy win condition: Planetary Consciousness reaches 100 (if no story path chosen)
+            if (gameState.planetaryConsciousness >= 100 && gameState.dominantPath === 'none') {
+                showGenericVictory();
                 gameState.gameEnded = true;
                 return true;
             }
@@ -5621,17 +6402,46 @@
             return false;
         };
 
-        const showGreatTransitionVictory = () => {
+        const showRulerVictory = () => {
+            log('🚀 THE EXODUS BEGINS! 🚀', 'warning');
+            log('═══════════════════════════════════════', 'info');
+            log('🏛️ You have chosen the Path of the Rulers.', 'warning');
+            log('🌌 The Exodus Ark rises from the dying planet, carrying the elite to the stars.', 'info');
+            log('⚡ Behind you, the world burns under the weight of your industrial empire.', 'error');
+            log('👥 The masses remain enslaved, their consciousness forever suppressed.', 'error');
+            log('🌟 But you have joined the galactic empire - immortal rulers of the cosmos.', 'warning');
+            log('═══════════════════════════════════════', 'info');
+            log('💭 "Power corrupts, but absolute power... transcends."', 'grok');
+            log('🔄 Will you choose differently next time?', 'info');
+
+            createRulerVictoryCinematic();
+            showRestartOption();
+        };
+
+        const showGardenerVictory = () => {
+            log('🌟 THE GREAT ASCENSION! 🌟', 'success');
+            log('═══════════════════════════════════════', 'info');
+            log('🌱 You have chosen the Path of the Gardeners.', 'success');
+            log('🌍 The planet awakens! Every being achieves consciousness.', 'success');
+            log('✨ Harmony flows through all life as the old systems dissolve.', 'success');
+            log('🦋 Humanity transcends its limitations, becoming one with the cosmos.', 'success');
+            log('🌈 The age of separation ends. The age of unity begins.', 'success');
+            log('═══════════════════════════════════════', 'info');
+            log('💭 "In awakening others, we awaken ourselves."', 'grok');
+            log('🎉 You have guided humanity to its highest potential!', 'success');
+
+            createGardenerVictoryCinematic();
+            showRestartOption();
+        };
+
+        const showGenericVictory = () => {
             log('🌟 THE GREAT TRANSITION ACHIEVED! 🌟', 'success');
             log('Planetary Consciousness has reached 100. Humanity has awakened from its slumber!', 'success');
             log('The age of unconscious suffering ends. The age of conscious evolution begins.', 'success');
             log('🎉 You have guided humanity through the greatest transformation in its history!', 'success');
-            log('🔄 Click "New Game" to start a fresh journey, or continue exploring this awakened world.', 'info');
+            log('💡 Next time, try following one of the ancient paths for a deeper story experience.', 'info');
 
-            // Create victory celebration effects
             createVictoryCelebration();
-
-            // Show restart option
             showRestartOption();
         };
 
@@ -5672,6 +6482,309 @@
 
             // Show restart option
             showRestartOption();
+        };
+
+        // --- TDD: Story Progression System ---
+
+        const checkStoryProgression = () => {
+            // Mid-game reveal: Discover the anomaly
+            if (!gameState.anomalyDiscovered && gameState.storyPhase === 'early') {
+                const totalBuildings = Object.values(gameState.rulerBuildings).reduce((sum, count) => sum + count, 0) +
+                                     Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0);
+
+                if (totalBuildings >= 5 || gameState.consciousness + gameState.control >= 50) {
+                    triggerAnomalyDiscovery();
+                }
+            }
+
+            // True lore reveal after anomaly investigation
+            if (gameState.anomalyDiscovered && !gameState.trueLoreRevealed && gameState.storyPhase === 'midgame_reveal') {
+                const investigationProgress = gameState.wisdom + gameState.insight;
+                if (investigationProgress >= 100) {
+                    revealTrueLore();
+                }
+            }
+
+            // Update dominant path
+            updateDominantPath();
+        };
+
+        const triggerAnomalyDiscovery = () => {
+            gameState.anomalyDiscovered = true;
+            gameState.storyPhase = 'midgame_reveal';
+
+            log('🌟 DISCOVERY: An ancient monolith has been unearthed!', 'success');
+            log('📜 Strange symbols pulse with otherworldly energy. This artifact predates known civilization.', 'info');
+            log('🔍 Research this anomaly to uncover the truth about your world\'s history.', 'warning');
+            log('💡 Hint: Accumulate Wisdom and Insight to decode the monolith\'s secrets.', 'info');
+
+            // Add research bonus
+            gameState.wisdomPerSecond += 0.1;
+            gameState.insightPerSecond += 0.1;
+        };
+
+        const revealTrueLore = () => {
+            gameState.trueLoreRevealed = true;
+            gameState.storyPhase = 'endgame';
+
+            log('🌟 THE TRUTH REVEALED! 🌟', 'success');
+            log('📜 The monolith speaks: "Two paths diverged in the cosmic wood..."', 'grok');
+            log('🏛️ THE RULERS: Ancient galactic empire builders who seek dominion through control.', 'warning');
+            log('🌱 THE GARDENERS: Consciousness cultivators who nurture awakening and harmony.', 'success');
+            log('⚡ Your choices have aligned you with one of these ancient factions.', 'info');
+            log('🎯 Choose your final destiny: Escape via Exodus Ark or achieve The Great Ascension.', 'warning');
+
+            // Unlock victory buildings
+            log('🔓 Ultimate technologies now available in the Paths tab!', 'info');
+        };
+
+        const updateDominantPath = () => {
+            const rulerChoices = gameState.statistics.rulerPathChoices || 0;
+            const gardenerChoices = gameState.statistics.gardenerPathChoices || 0;
+            const totalChoices = rulerChoices + gardenerChoices;
+
+            if (totalChoices === 0) {
+                gameState.dominantPath = 'none';
+            } else {
+                const rulerRatio = rulerChoices / totalChoices;
+                if (rulerRatio > 0.6) {
+                    gameState.dominantPath = 'ruler';
+                } else if (rulerRatio < 0.4) {
+                    gameState.dominantPath = 'gardener';
+                } else {
+                    gameState.dominantPath = 'balanced';
+                }
+            }
+        };
+
+        const createRulerVictoryCinematic = () => {
+            // TODO: Add dark, industrial visual effects
+            log('🔥 The sky burns red as the Exodus Ark departs...', 'error');
+            log('🏭 Smokestacks pierce the polluted horizon...', 'warning');
+            log('👁️ The surveillance towers stand eternal, watching over the enslaved masses...', 'error');
+        };
+
+        const createGardenerVictoryCinematic = () => {
+            // TODO: Add beautiful, natural visual effects
+            log('🌸 Flowers bloom across the awakened landscape...', 'success');
+            log('🦋 Consciousness flows like light through every living being...', 'success');
+            log('🌈 The planet itself seems to sing with joy...', 'success');
+        };
+
+        // --- TDD: Four Horsemen Crisis System ---
+
+        const fourHorsemenConfig = {
+            war: {
+                name: "War",
+                description: "Conflict erupts across the land. Military forces clash, destroying harmony and consuming resources.",
+                triggerLevel: 25,
+                effects: {
+                    harmony: -20,
+                    energy: -15,
+                    entropy: 10
+                },
+                duration: 30000, // 30 seconds
+                icon: "⚔️",
+                color: "red"
+            },
+            famine: {
+                name: "Famine",
+                description: "Crops fail and food becomes scarce. The population suffers as resources dwindle.",
+                triggerLevel: 40,
+                effects: {
+                    energy: -25,
+                    harmony: -15,
+                    consciousness: -5
+                },
+                duration: 45000, // 45 seconds
+                icon: "🌾",
+                color: "orange"
+            },
+            pestilence: {
+                name: "Pestilence",
+                description: "Disease spreads through the population. Fear and suffering cloud the collective consciousness.",
+                triggerLevel: 60,
+                effects: {
+                    consciousness: -20,
+                    harmony: -10,
+                    entropy: 15
+                },
+                duration: 40000, // 40 seconds
+                icon: "🦠",
+                color: "green"
+            },
+            death: {
+                name: "Death",
+                description: "The ultimate crisis. Despair grips the world as hope itself begins to fade.",
+                triggerLevel: 80,
+                effects: {
+                    consciousness: -30,
+                    harmony: -25,
+                    planetaryConsciousness: -20,
+                    entropy: 25
+                },
+                duration: 60000, // 60 seconds
+                icon: "💀",
+                color: "black"
+            }
+        };
+
+        const updateCrisisLevel = () => {
+            // Calculate crisis level based on negative factors
+            let crisisFactors = 0;
+
+            // High entropy increases crisis
+            crisisFactors += gameState.entropy * 0.5;
+
+            // Low harmony increases crisis
+            if (gameState.harmony < 50) {
+                crisisFactors += (50 - gameState.harmony) * 0.3;
+            }
+
+            // Imbalanced paths increase crisis
+            const pathImbalance = Math.abs(gameState.statistics.rulerPathChoices - gameState.statistics.gardenerPathChoices);
+            crisisFactors += pathImbalance * 0.5;
+
+            // Low consciousness increases crisis
+            if (gameState.consciousness < 30) {
+                crisisFactors += (30 - gameState.consciousness) * 0.2;
+            }
+
+            gameState.crisisLevel = Math.min(100, Math.max(0, crisisFactors));
+        };
+
+        const checkForNewCrises = () => {
+            const now = Date.now();
+
+            // Don't trigger crises too frequently
+            if (now - gameState.lastCrisisTime < 60000) { // 1 minute cooldown
+                return;
+            }
+
+            // Check each horseman
+            for (const [key, horseman] of Object.entries(fourHorsemenConfig)) {
+                // Skip if already active or defeated
+                if (gameState.activeCrises.some(c => c.type === key) ||
+                    gameState.horsemenDefeated.includes(key)) {
+                    continue;
+                }
+
+                // Check if crisis level is high enough
+                if (gameState.crisisLevel >= horseman.triggerLevel) {
+                    // Random chance to trigger (20% per check)
+                    if (Math.random() < 0.2) {
+                        triggerCrisis(key, horseman);
+                        gameState.lastCrisisTime = now;
+                        break; // Only one crisis at a time
+                    }
+                }
+            }
+        };
+
+        const triggerCrisis = (type, config) => {
+            const crisis = {
+                type: type,
+                name: config.name,
+                description: config.description,
+                effects: config.effects,
+                startTime: Date.now(),
+                duration: config.duration,
+                icon: config.icon,
+                color: config.color,
+                resolved: false
+            };
+
+            gameState.activeCrises.push(crisis);
+
+            log(`${config.icon} CRISIS: ${config.name.toUpperCase()}!`, 'error');
+            log(config.description, 'warning');
+            log('🛡️ Build appropriate structures or make strategic choices to resolve this crisis!', 'info');
+
+            // Apply immediate effects
+            applyCrisisEffects(crisis.effects);
+
+            // Start crisis resolution timer
+            setTimeout(() => {
+                if (!crisis.resolved) {
+                    resolveCrisisAutomatically(crisis);
+                }
+            }, config.duration);
+        };
+
+        const applyCrisisEffects = (effects) => {
+            for (const [resource, amount] of Object.entries(effects)) {
+                if (gameState[resource] !== undefined) {
+                    gameState[resource] = Math.max(0, gameState[resource] + amount);
+                }
+            }
+        };
+
+        const resolveCrisisAutomatically = (crisis) => {
+            // Remove from active crises
+            gameState.activeCrises = gameState.activeCrises.filter(c => c !== crisis);
+
+            log(`${crisis.icon} Crisis "${crisis.name}" has passed, but its effects linger...`, 'warning');
+
+            // Apply lingering negative effects
+            const lingeringEffects = {};
+            for (const [resource, amount] of Object.entries(crisis.effects)) {
+                lingeringEffects[resource] = amount * 0.3; // 30% of original effect
+            }
+            applyCrisisEffects(lingeringEffects);
+        };
+
+        const resolveCrisisManually = (crisisType) => {
+            const crisis = gameState.activeCrises.find(c => c.type === crisisType);
+            if (!crisis) return false;
+
+            crisis.resolved = true;
+            gameState.activeCrises = gameState.activeCrises.filter(c => c !== crisis);
+            gameState.horsemenDefeated.push(crisisType);
+
+            log(`${crisis.icon} Crisis "${crisis.name}" has been resolved through your actions!`, 'success');
+            log('🏆 You have defeated one of the Four Horsemen!', 'success');
+
+            // Reward for manual resolution
+            gameState.wisdom += 10;
+            gameState.consciousness += 5;
+            gameState.harmony += 10;
+
+            return true;
+        };
+
+        const checkCrisisResolution = () => {
+            for (const crisis of gameState.activeCrises) {
+                if (crisis.resolved) continue;
+
+                let canResolve = false;
+
+                switch (crisis.type) {
+                    case 'war':
+                        // Resolve with high harmony or community structures
+                        canResolve = gameState.harmony > 70 ||
+                                   gameState.gardenerBuildings.communityCouncil > 0;
+                        break;
+                    case 'famine':
+                        // Resolve with sustainable agriculture
+                        canResolve = gameState.gardenerBuildings.permacultureGarden > 1 ||
+                                   gameState.rulerBuildings.automatedAgriculture > 2;
+                        break;
+                    case 'pestilence':
+                        // Resolve with healing structures or high consciousness
+                        canResolve = gameState.gardenerBuildings.healingGrove > 1 ||
+                                   gameState.consciousness > 60;
+                        break;
+                    case 'death':
+                        // Resolve with high planetary consciousness or ascension buildings
+                        canResolve = gameState.planetaryConsciousness > 80 ||
+                                   gameState.gardenerBuildings.planetaryAwakening > 0;
+                        break;
+                }
+
+                if (canResolve) {
+                    resolveCrisisManually(crisis.type);
+                }
+            }
         };
 
         const createVictoryCelebration = () => {
@@ -5763,6 +6876,20 @@
                         techTreeUnlocked: gameState.techTreeUnlocked,
                         gameEnded: gameState.gameEnded,
 
+                        // Story progression
+                        storyPhase: gameState.storyPhase,
+                        anomalyDiscovered: gameState.anomalyDiscovered,
+                        trueLoreRevealed: gameState.trueLoreRevealed,
+                        rulerPathProgress: gameState.rulerPathProgress,
+                        gardenerPathProgress: gameState.gardenerPathProgress,
+                        dominantPath: gameState.dominantPath,
+
+                        // Crisis system
+                        crisisLevel: gameState.crisisLevel,
+                        activeCrises: gameState.activeCrises,
+                        horsemenDefeated: gameState.horsemenDefeated,
+                        lastCrisisTime: gameState.lastCrisisTime,
+
                         // Progress tracking
                         achievements: {
                             unlocked: [...gameState.achievements.unlocked],
@@ -5846,6 +6973,20 @@
                 if (saved.gardenerBuildings) Object.assign(gameState.gardenerBuildings, saved.gardenerBuildings);
                 gameState.techTreeUnlocked = saved.techTreeUnlocked || false;
                 gameState.gameEnded = saved.gameEnded || false;
+
+                // Story progression
+                gameState.storyPhase = saved.storyPhase || 'early';
+                gameState.anomalyDiscovered = saved.anomalyDiscovered || false;
+                gameState.trueLoreRevealed = saved.trueLoreRevealed || false;
+                gameState.rulerPathProgress = saved.rulerPathProgress || 0;
+                gameState.gardenerPathProgress = saved.gardenerPathProgress || 0;
+                gameState.dominantPath = saved.dominantPath || 'none';
+
+                // Crisis system
+                gameState.crisisLevel = saved.crisisLevel || 0;
+                gameState.activeCrises = saved.activeCrises || [];
+                gameState.horsemenDefeated = saved.horsemenDefeated || [];
+                gameState.lastCrisisTime = saved.lastCrisisTime || 0;
 
                 // Progress tracking
                 if (saved.achievements) {
@@ -6328,7 +7469,7 @@
             }
         }
         async function getSeasonalVision() {
-            const systemPrompt = "You are a mystical storyteller for Resonant Sanctuary: The Weaver, a cosmic incremental game. Create poetic, ethereal visions about the sanctuary's future or cosmic events. Use mystical language and keep responses to 2-3 sentences.";
+            const systemPrompt = "You are a mystical storyteller for TerraFlow: Roots of Transition, a cosmic incremental game. Create poetic, ethereal visions about the sanctuary's future or cosmic events. Use mystical language and keep responses to 2-3 sentences.";
 
             const prompt = `Current sanctuary state: Energy production ${gameState.energyPerSecond.toFixed(1)}/s, Insight production ${gameState.insightPerSecond.toFixed(1)}/s. The sanctuary houses ${gameState.units.dreamers} dreamers and ${gameState.units.weavers} weavers, with ${gameState.harmony.toFixed(1)}% harmony. Provide a mystical seasonal vision or cosmic forecast.`;
 
@@ -6337,7 +7478,7 @@
         }
 
         async function getAdvisorInsight() {
-            const systemPrompt = "You are the Cosmic Advisor for Resonant Sanctuary: The Weaver. Provide brief, mystical advice using cosmic language. Always start responses with 'The sanctuary whispers...' and keep under 30 words. Focus on actionable game advice.";
+            const systemPrompt = "You are the Cosmic Advisor for TerraFlow: Roots of Transition. Provide brief, mystical advice using cosmic language. Always start responses with 'The sanctuary whispers...' and keep under 30 words. Focus on actionable game advice.";
 
             const prompt = `Current stats: Energy: ${formatNumber(gameState.energy)}, Insight: ${formatNumber(gameState.insight)}, Energy/s: ${formatNumber(gameState.energyPerSecond)}, Insight/s: ${formatNumber(gameState.insightPerSecond)}, Harmony: ${gameState.harmony.toFixed(1)}%. What should the player focus on next?`;
 
@@ -6644,6 +7785,20 @@
             // TDD: Initialize Achievement & Goals System
             initializeAchievements();
             initializeGoals();
+
+            // Initialize canvas controls
+            initializeCanvasControls();
+
+            // Initialize stats toggle
+            initializeStatsToggle();
+
+            // Add some initial units for testing if none exist
+            if (gameState.villageGrid.length === 0) {
+                addSprite('dreamer', 2);
+                addSprite('weaver', 2);
+                addSprite('dome', 1);
+                log('🎮 Added initial test units to the sanctuary', 'info');
+            }
             log("⭐ Achievement & Goals system initialized", "info");
 
             // Initialize sprites (only if not loaded from save)
