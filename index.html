@@ -128,6 +128,35 @@
                     </div>
                 </div>
             </div>
+
+            <!-- TDD: Conversational AI Units Panel -->
+            <div class="mt-6 flex-1">
+                <h2 class="text-xl font-semibold mb-4 text-white">Conversational Beings</h2>
+                <div class="space-y-3">
+                    <button onclick="spawnConversationalUnit('philosopherDreamer')"
+                            class="w-full p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-medium transition-all duration-200 transform hover:scale-105">
+                        🧙‍♂️ Awaken Philosopher Dreamer
+                        <div class="text-xs text-indigo-200 mt-1">Contemplates existence and shares wisdom</div>
+                    </button>
+
+                    <button onclick="spawnConversationalUnit('artisticWeaver')"
+                            class="w-full p-3 rounded-lg bg-gradient-to-r from-pink-600 to-pink-700 hover:from-pink-700 hover:to-pink-800 text-white font-medium transition-all duration-200 transform hover:scale-105">
+                        🎨 Inspire Artistic Weaver
+                        <div class="text-xs text-pink-200 mt-1">Creates beauty and expresses creativity</div>
+                    </button>
+
+                    <button onclick="spawnConversationalUnit('curiousExplorer')"
+                            class="w-full p-3 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-medium transition-all duration-200 transform hover:scale-105">
+                        🔍 Summon Curious Explorer
+                        <div class="text-xs text-emerald-200 mt-1">Discovers mysteries and seeks knowledge</div>
+                    </button>
+
+                    <div class="text-xs text-purple-300 mt-3 p-2 bg-purple-900/30 rounded">
+                        <strong>Conversational Beings:</strong> <span id="conversational-count">0</span><br>
+                        <em>Click on them to engage in meaningful dialogue and discover their unique perspectives.</em>
+                    </div>
+                </div>
+            </div>
              <div class="mt-6 space-y-3">
                  <button id="advisor-btn" class="grok-btn w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
                     📜 Ask Advisor
@@ -237,6 +266,7 @@
             villageGrid: [],
             stars: [],
             intelligentCreatures: [], // TDD: Intelligent creatures with AI behaviors
+            conversationalUnits: [], // TDD: Conversational AI units with LLM dialogue
             lastUpdate: Date.now(),
         };
 
@@ -512,6 +542,9 @@
             // TDD: Update intelligent creatures
             updateIntelligentCreatures(0.016);
 
+            // TDD: Update conversational AI units
+            updateConversationalUnits(0.016);
+
             gameState.villageGrid.sort((a, b) => a.y - b.y);
             gameState.villageGrid.forEach(item => {
                 const isHovered = dragState.hoveredUnit === item;
@@ -528,6 +561,9 @@
 
             // TDD: Draw intelligent creatures
             drawIntelligentCreatures();
+
+            // TDD: Draw conversational AI units
+            drawConversationalUnits();
 
             // Ambient light effects
             drawAmbientEffects();
@@ -1062,6 +1098,20 @@
         const getUnitAtPosition = (x, y) => {
             for (let i = gameState.villageGrid.length - 1; i >= 0; i--) {
                 const unit = gameState.villageGrid[i];
+                const dx = x - unit.x;
+                const dy = y - unit.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance <= unit.size) {
+                    return unit;
+                }
+            }
+            return null;
+        };
+
+        const getConversationalUnitAtPosition = (x, y) => {
+            for (let i = gameState.conversationalUnits.length - 1; i >= 0; i--) {
+                const unit = gameState.conversationalUnits[i];
                 const dx = x - unit.x;
                 const dy = y - unit.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -2430,6 +2480,784 @@
             ctx.restore();
         };
 
+        // --- TDD: Conversational AI Units System ---
+
+        let conversationalUnitIdCounter = 0;
+
+        const createConversationalUnit = (type, x, y) => {
+            const unit = {
+                id: `conv_${conversationalUnitIdCounter++}`,
+                type: type,
+                x: x,
+                y: y,
+                size: 25,
+                conversational: true,
+                personality: {
+                    traits: [],
+                    mood: 'neutral',
+                    creativity: 0.3 + Math.random() * 0.7,
+                    empathy: 0.3 + Math.random() * 0.7,
+                    curiosity: 0.3 + Math.random() * 0.7,
+                    wisdom: 0.3 + Math.random() * 0.7
+                },
+                dialogue: {
+                    currentTopic: null,
+                    conversationHistory: [],
+                    lastSpoke: 0,
+                    speakingCooldown: 8000,
+                    preferredTopics: [],
+                    memories: [],
+                    relationships: new Map(),
+                    currentThought: null,
+                    thoughtBubbleVisible: false
+                },
+                needs: {
+                    current: [],
+                    fulfilled: [],
+                    priority: 'low'
+                },
+                creativity: {
+                    ideas: [],
+                    projects: [],
+                    inspirationLevel: 30 + Math.random() * 40
+                },
+                specialOffers: [],
+                state: 'idle',
+                playerRelationship: 0.1,
+                animationOffset: Math.random() * Math.PI * 2,
+                thoughtTimer: 0,
+                nextThoughtTime: 5000 + Math.random() * 10000
+            };
+
+            // Initialize based on unit type
+            if (type === 'philosopherDreamer') {
+                unit.personality.traits = ['contemplative', 'wise', 'patient', 'deep-thinking'];
+                unit.dialogue.preferredTopics = ['existence', 'dreams', 'cosmic_mysteries', 'consciousness'];
+                unit.specialOffers = ['dream_interpretation', 'philosophical_guidance', 'meditation_session'];
+                unit.color = '#6366F1';
+                unit.glowColor = '#8B5CF6';
+            } else if (type === 'artisticWeaver') {
+                unit.personality.traits = ['creative', 'expressive', 'passionate', 'imaginative'];
+                unit.dialogue.preferredTopics = ['art', 'beauty', 'creation', 'inspiration'];
+                unit.specialOffers = ['custom_artwork', 'creative_collaboration', 'aesthetic_enhancement'];
+                unit.color = '#EC4899';
+                unit.glowColor = '#F472B6';
+            } else if (type === 'curiousExplorer') {
+                unit.personality.traits = ['inquisitive', 'adventurous', 'energetic', 'observant'];
+                unit.dialogue.preferredTopics = ['discoveries', 'mysteries', 'exploration', 'unknown'];
+                unit.specialOffers = ['guided_exploration', 'mystery_solving', 'treasure_hunting'];
+                unit.color = '#10B981';
+                unit.glowColor = '#34D399';
+            }
+
+            return unit;
+        };
+
+        const spawnConversationalUnit = (type) => {
+            const x = Math.random() * (canvas.width - 200) + 100;
+            const y = Math.random() * (canvas.height - 200) + 100;
+            const unit = createConversationalUnit(type, x, y);
+            gameState.conversationalUnits.push(unit);
+            log(`A ${type} awakens and begins to contemplate the sanctuary...`, 'success');
+            return unit;
+        };
+
+        const generateThought = (unit) => {
+            const thoughts = {
+                philosopherDreamer: [
+                    "What dreams shape reality in this cosmic sanctuary?",
+                    "I sense the interconnectedness of all beings here...",
+                    "The harmony flows like a river of consciousness.",
+                    "Perhaps existence itself is but a shared dream?",
+                    "I wonder what wisdom the stars whisper tonight..."
+                ],
+                artisticWeaver: [
+                    "The colors of energy here inspire new creations!",
+                    "I could weave beauty from these cosmic threads...",
+                    "Art is the language the universe speaks to itself.",
+                    "What masterpiece shall we create together?",
+                    "Beauty exists in every particle of this sanctuary."
+                ],
+                curiousExplorer: [
+                    "What mysteries lie hidden in the sanctuary's depths?",
+                    "I sense something fascinating just beyond perception...",
+                    "Every corner holds a new discovery waiting!",
+                    "The unknown calls to me with irresistible allure.",
+                    "Adventure and wonder await those who seek!"
+                ]
+            };
+
+            const typeThoughts = thoughts[unit.type] || ["I contemplate the mysteries of existence..."];
+            return typeThoughts[Math.floor(Math.random() * typeThoughts.length)];
+        };
+
+        const updateConversationalUnits = (deltaTime) => {
+            const currentTime = Date.now();
+
+            gameState.conversationalUnits.forEach(unit => {
+                // Update thought timer
+                unit.thoughtTimer += deltaTime * 1000;
+
+                // Generate new thoughts periodically
+                if (unit.thoughtTimer >= unit.nextThoughtTime) {
+                    unit.dialogue.currentThought = generateThought(unit);
+                    unit.dialogue.thoughtBubbleVisible = true;
+                    unit.thoughtTimer = 0;
+                    unit.nextThoughtTime = 8000 + Math.random() * 15000; // 8-23 seconds
+
+                    // Hide thought bubble after a while
+                    setTimeout(() => {
+                        unit.dialogue.thoughtBubbleVisible = false;
+                    }, 4000);
+                }
+
+                // Update needs based on game state
+                updateUnitNeeds(unit);
+
+                // Generate creative ideas periodically
+                if (Math.random() < 0.001 && unit.creativity.inspirationLevel > 60) { // 0.1% chance per frame
+                    generateCreativeIdea(unit);
+                }
+
+                // Gentle movement
+                if (Math.random() < 0.005) { // 0.5% chance per frame to move
+                    const moveRadius = 30;
+                    unit.targetX = unit.x + (Math.random() - 0.5) * moveRadius;
+                    unit.targetY = unit.y + (Math.random() - 0.5) * moveRadius;
+
+                    // Keep within bounds
+                    unit.targetX = Math.max(50, Math.min(canvas.width - 50, unit.targetX));
+                    unit.targetY = Math.max(50, Math.min(canvas.height - 50, unit.targetY));
+                }
+
+                // Simple movement towards target
+                if (unit.targetX && unit.targetY) {
+                    const dx = unit.targetX - unit.x;
+                    const dy = unit.targetY - unit.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 2) {
+                        const speed = 15; // Slow, contemplative movement
+                        const moveDistance = speed * deltaTime;
+                        const ratio = Math.min(moveDistance / distance, 1);
+
+                        unit.x += dx * ratio;
+                        unit.y += dy * ratio;
+                    }
+                }
+            });
+        };
+
+        const updateUnitNeeds = (unit) => {
+            unit.needs.current = [];
+
+            // Generate needs based on game state
+            if (gameState.harmony < 50) {
+                unit.needs.current.push({
+                    type: 'harmony_restoration',
+                    urgency: 'high',
+                    description: 'The sanctuary feels discordant. I need to help restore balance.'
+                });
+            }
+
+            if (gameState.energy < 30) {
+                unit.needs.current.push({
+                    type: 'energy_boost',
+                    urgency: 'medium',
+                    description: 'The energy flows are weak. We need to revitalize them.'
+                });
+            }
+
+            // Type-specific needs
+            if (unit.type === 'artisticWeaver' && unit.creativity.inspirationLevel < 40) {
+                unit.needs.current.push({
+                    type: 'inspiration',
+                    urgency: 'medium',
+                    description: 'I need more beauty and inspiration to create meaningful art.'
+                });
+            }
+
+            if (unit.type === 'philosopherDreamer' && gameState.insight < 20) {
+                unit.needs.current.push({
+                    type: 'contemplation_space',
+                    urgency: 'low',
+                    description: 'I require quiet contemplation to generate deeper insights.'
+                });
+            }
+        };
+
+        const generateCreativeIdea = (unit) => {
+            const ideas = [];
+            const creativityScore = unit.personality.creativity * (unit.creativity.inspirationLevel / 100);
+
+            if (creativityScore > 0.6) {
+                if (unit.type === 'artisticWeaver') {
+                    ideas.push({
+                        type: 'artistic_creation',
+                        title: 'Harmony Tapestry',
+                        description: 'A living tapestry that visualizes the sanctuary\'s energy flows',
+                        requirements: { insight: 30, harmony: 60 },
+                        effects: { beauty: 20, harmony_generation: 0.5 },
+                        timeToComplete: 120000
+                    });
+                } else if (unit.type === 'philosopherDreamer') {
+                    ideas.push({
+                        type: 'philosophical_insight',
+                        title: 'Meditation Garden Design',
+                        description: 'A sacred space layout that enhances contemplation and wisdom',
+                        requirements: { energy: 25, insight: 40 },
+                        effects: { wisdom_boost: 1.3, meditation_efficiency: 1.5 },
+                        timeToComplete: 180000
+                    });
+                }
+            }
+
+            if (ideas.length > 0) {
+                unit.creativity.ideas.push(...ideas);
+                log(`${unit.type} has a creative inspiration!`, 'info');
+            }
+        };
+
+        const generateLLMDialogue = async (unit, playerInput = null) => {
+            // Simulate LLM response for now (in real implementation, this would call the actual LLM API)
+            const responses = {
+                philosopherDreamer: {
+                    greeting: [
+                        "Ah, seeker of wisdom, I sense your curiosity about the cosmic mysteries. Would you like me to share a dream vision I had about the sanctuary's future?",
+                        "Welcome, contemplative soul. I've been pondering the nature of existence in this sacred space. What brings you to seek conversation?",
+                        "Greetings, fellow traveler of consciousness. I feel the harmony flowing between us. Shall we explore the deeper meanings together?"
+                    ],
+                    needs: [
+                        "I sense discord in the sanctuary's harmony. Perhaps we could work together to restore the cosmic balance?",
+                        "The energy flows seem diminished. I could guide a meditation to revitalize our shared space, if you're willing.",
+                        "I've been contemplating ways to enhance our sanctuary's wisdom. Would you be interested in a philosophical collaboration?"
+                    ],
+                    creative: [
+                        "I've envisioned a magnificent meditation garden that could transform how we experience consciousness here. Shall I share this dream with you?",
+                        "In my contemplations, I've discovered a method to weave dreams into reality. Would you like to explore this possibility together?",
+                        "I sense great potential for a consciousness bridge that could unite all beings in the sanctuary. Are you ready for such a profound undertaking?"
+                    ]
+                },
+                artisticWeaver: {
+                    greeting: [
+                        "Oh, what beautiful energy you bring! I can see colors dancing around you that inspire new creations. Would you like to co-create something magnificent?",
+                        "Welcome, kindred spirit! I've been weaving patterns of light and sound. Your presence adds such wonderful new hues to my palette!",
+                        "Greetings, fellow appreciator of beauty! I sense an artistic collaboration brewing between us. What masterpiece shall we birth together?"
+                    ],
+                    needs: [
+                        "I'm yearning for more inspiration to fuel my creative fire. The sanctuary's beauty feeds my art - could we enhance it together?",
+                        "My artistic vision sees potential for incredible beauty here, but I need more creative energy. Would you help me gather inspiration?",
+                        "I feel the sanctuary calling for more aesthetic harmony. My art could transform this space - shall we begin a beautiful project?"
+                    ],
+                    creative: [
+                        "I've conceived of a living tapestry that would make the sanctuary's energy visible as flowing art. Would you commission this masterpiece?",
+                        "My imagination has birthed a cosmic sculpture that could boost everyone's creativity. Shall we bring this vision to life?",
+                        "I dream of creating an interactive art installation where beauty itself becomes a source of power. Are you ready to make art that changes reality?"
+                    ]
+                },
+                curiousExplorer: {
+                    greeting: [
+                        "Fascinating! A new consciousness to explore and understand! I've been mapping the hidden mysteries of this sanctuary. Want to join my next expedition?",
+                        "Greetings, fellow seeker! I've discovered the most intriguing phenomena in the sanctuary's depths. Would you like to investigate them with me?",
+                        "Welcome, adventurous spirit! I sense you have the curiosity for great discoveries. Shall we uncover the sanctuary's secrets together?"
+                    ],
+                    needs: [
+                        "I've detected mysterious energy signatures that need investigation. Would you help me explore these fascinating anomalies?",
+                        "My explorations have revealed hidden chambers of knowledge, but I need a companion to safely venture deeper. Are you brave enough?",
+                        "I sense undiscovered treasures of wisdom scattered throughout the sanctuary. Shall we embark on a treasure hunt together?"
+                    ],
+                    creative: [
+                        "I've mapped a route to dimensions beyond our current perception. Would you join me on an interdimensional exploration?",
+                        "My investigations have revealed a method to unlock hidden abilities through discovery. Are you ready for such an adventure?",
+                        "I've conceived of an exploration network that could reveal all the sanctuary's mysteries simultaneously. Shall we build it together?"
+                    ]
+                }
+            };
+
+            const unitResponses = responses[unit.type] || responses.philosopherDreamer;
+            let responseCategory = 'greeting';
+
+            if (unit.needs.current.length > 0) {
+                responseCategory = 'needs';
+            } else if (unit.creativity.ideas.length > 0) {
+                responseCategory = 'creative';
+            }
+
+            const possibleResponses = unitResponses[responseCategory];
+            const response = possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
+
+            // Update conversation history
+            if (playerInput) {
+                unit.dialogue.conversationHistory.push({
+                    timestamp: Date.now(),
+                    player: playerInput,
+                    unit: response,
+                    topic: unit.dialogue.currentTopic
+                });
+            }
+
+            return response;
+        };
+
+        const drawConversationalUnits = () => {
+            gameState.conversationalUnits.forEach(unit => {
+                drawConversationalUnit(unit);
+            });
+        };
+
+        const drawConversationalUnit = (unit) => {
+            ctx.save();
+            ctx.translate(unit.x, unit.y);
+
+            const pulse = 1 + Math.sin(animationTime * 1.2 + unit.animationOffset) * 0.08;
+            const currentSize = unit.size * pulse;
+
+            // Consciousness aura - more ethereal than regular units
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.shadowColor = unit.glowColor;
+            ctx.shadowBlur = 40;
+
+            const auraGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 3);
+            const r = parseInt(unit.glowColor.slice(1,3), 16);
+            const g = parseInt(unit.glowColor.slice(3,5), 16);
+            const b = parseInt(unit.glowColor.slice(5,7), 16);
+
+            auraGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.4)`);
+            auraGradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.2)`);
+            auraGradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 3, 0, Math.PI * 2);
+            ctx.fillStyle = auraGradient;
+            ctx.fill();
+            ctx.restore();
+
+            // Draw unit based on type
+            if (unit.type === 'philosopherDreamer') {
+                drawPhilosopherDreamer(unit, currentSize);
+            } else if (unit.type === 'artisticWeaver') {
+                drawArtisticWeaver(unit, currentSize);
+            } else if (unit.type === 'curiousExplorer') {
+                drawCuriousExplorer(unit, currentSize);
+            }
+
+            // Draw thought bubble if visible
+            if (unit.dialogue.thoughtBubbleVisible && unit.dialogue.currentThought) {
+                drawThoughtBubble(unit, currentSize);
+            }
+
+            // Draw conversation indicator
+            if (unit.dialogue.conversationHistory.length > 0) {
+                drawConversationIndicator(unit, currentSize);
+            }
+
+            // Draw needs indicator
+            if (unit.needs.current.length > 0) {
+                drawNeedsIndicator(unit, currentSize);
+            }
+
+            ctx.restore();
+        };
+
+        const drawPhilosopherDreamer = (unit, size) => {
+            // Ethereal, contemplative design with flowing energy
+            ctx.save();
+            ctx.shadowColor = unit.glowColor;
+            ctx.shadowBlur = 30;
+
+            // Main consciousness form - flowing, organic shape
+            const flow = animationTime * 0.8;
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            const r = parseInt(unit.color.slice(1,3), 16);
+            const g = parseInt(unit.color.slice(3,5), 16);
+            const b = parseInt(unit.color.slice(5,7), 16);
+
+            gradient.addColorStop(0, `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, 1.0)`);
+            gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, 0.9)`);
+            gradient.addColorStop(1, `rgba(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)}, 0.6)`);
+
+            // Draw flowing consciousness form
+            ctx.beginPath();
+            for (let i = 0; i <= 20; i++) {
+                const angle = (i * Math.PI * 2) / 20;
+                const variation = 1 + Math.sin(angle * 3 + flow) * 0.15;
+                const radius = size * variation;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Wisdom symbols floating around
+            for (let i = 0; i < 4; i++) {
+                const symbolAngle = flow * 0.3 + (i * Math.PI * 2 / 4);
+                const symbolRadius = size * 1.8;
+                const symbolX = Math.cos(symbolAngle) * symbolRadius;
+                const symbolY = Math.sin(symbolAngle) * symbolRadius;
+
+                ctx.save();
+                ctx.translate(symbolX, symbolY);
+                ctx.rotate(symbolAngle);
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.7)`;
+                ctx.font = '16px serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(['◊', '◈', '◇', '◆'][i], 0, 5);
+                ctx.restore();
+            }
+
+            // Central consciousness eye
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = unit.color;
+            ctx.fill();
+
+            ctx.restore();
+        };
+
+        const drawArtisticWeaver = (unit, size) => {
+            // Creative, colorful design with artistic flair
+            ctx.save();
+            ctx.shadowColor = unit.glowColor;
+            ctx.shadowBlur = 25;
+
+            const creativity = animationTime * 1.5;
+
+            // Main artistic form - dynamic, creative shape
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            const r = parseInt(unit.color.slice(1,3), 16);
+            const g = parseInt(unit.color.slice(3,5), 16);
+            const b = parseInt(unit.color.slice(5,7), 16);
+
+            gradient.addColorStop(0, `rgba(${Math.min(255, r + 60)}, ${Math.min(255, g + 60)}, ${Math.min(255, b + 60)}, 1.0)`);
+            gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.9)`);
+            gradient.addColorStop(1, `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 0.7)`);
+
+            // Draw artistic petals/brushstrokes
+            for (let i = 0; i < 8; i++) {
+                const petalAngle = (i * Math.PI * 2 / 8) + creativity * 0.2;
+                const petalLength = size * (0.8 + Math.sin(creativity + i) * 0.3);
+
+                ctx.save();
+                ctx.rotate(petalAngle);
+                ctx.beginPath();
+                ctx.ellipse(petalLength * 0.4, 0, petalLength * 0.6, petalLength * 0.2, 0, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Central creative core
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)}, 0.9)`;
+            ctx.fill();
+
+            // Creative sparkles
+            for (let i = 0; i < 6; i++) {
+                const sparkleAngle = creativity * 2 + (i * Math.PI * 2 / 6);
+                const sparkleRadius = size * (1.2 + Math.sin(creativity * 3 + i) * 0.2);
+                const sparkleX = Math.cos(sparkleAngle) * sparkleRadius;
+                const sparkleY = Math.sin(sparkleAngle) * sparkleRadius;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.beginPath();
+                ctx.arc(sparkleX, sparkleY, 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.shadowColor = unit.glowColor;
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore();
+        };
+
+        const drawCuriousExplorer = (unit, size) => {
+            // Dynamic, energetic design with exploration motifs
+            ctx.save();
+            ctx.shadowColor = unit.glowColor;
+            ctx.shadowBlur = 20;
+
+            const exploration = animationTime * 2;
+
+            // Main explorer form - angular, dynamic
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            const r = parseInt(unit.color.slice(1,3), 16);
+            const g = parseInt(unit.color.slice(3,5), 16);
+            const b = parseInt(unit.color.slice(5,7), 16);
+
+            gradient.addColorStop(0, `rgba(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)}, 1.0)`);
+            gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, 0.9)`);
+            gradient.addColorStop(1, `rgba(${Math.max(0, r - 25)}, ${Math.max(0, g - 25)}, ${Math.max(0, b - 25)}, 0.7)`);
+
+            // Draw exploration compass design
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const angle = (i * Math.PI * 2) / 8;
+                const radius = i % 2 === 0 ? size : size * 0.6;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Exploration rays
+            for (let i = 0; i < 4; i++) {
+                const rayAngle = exploration * 0.5 + (i * Math.PI * 2 / 4);
+                const rayLength = size * (1.5 + Math.sin(exploration + i) * 0.3);
+
+                ctx.save();
+                ctx.rotate(rayAngle);
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.6)`;
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 10;
+
+                ctx.beginPath();
+                ctx.moveTo(size * 0.8, 0);
+                ctx.lineTo(rayLength, 0);
+                ctx.stroke();
+
+                // Arrow tip
+                ctx.beginPath();
+                ctx.moveTo(rayLength, 0);
+                ctx.lineTo(rayLength - 8, -4);
+                ctx.lineTo(rayLength - 8, 4);
+                ctx.closePath();
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.8)`;
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            // Central discovery core
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${Math.min(255, r + 70)}, ${Math.min(255, g + 70)}, ${Math.min(255, b + 70)}, 0.9)`;
+            ctx.fill();
+
+            ctx.restore();
+        };
+
+        const drawThoughtBubble = (unit, size) => {
+            if (!unit.dialogue.currentThought) return;
+
+            ctx.save();
+            ctx.translate(0, -size * 2);
+
+            // Bubble background
+            const bubbleWidth = Math.min(200, unit.dialogue.currentThought.length * 8);
+            const bubbleHeight = 40;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 10;
+
+            // Rounded rectangle
+            ctx.beginPath();
+            ctx.roundRect(-bubbleWidth/2, -bubbleHeight/2, bubbleWidth, bubbleHeight, 15);
+            ctx.fill();
+            ctx.stroke();
+
+            // Bubble tail
+            ctx.beginPath();
+            ctx.moveTo(0, bubbleHeight/2);
+            ctx.lineTo(-10, bubbleHeight/2 + 15);
+            ctx.lineTo(10, bubbleHeight/2 + 15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = '#333';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 0;
+
+            // Word wrap
+            const words = unit.dialogue.currentThought.split(' ');
+            const lines = [];
+            let currentLine = '';
+
+            words.forEach(word => {
+                const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                if (ctx.measureText(testLine).width < bubbleWidth - 20) {
+                    currentLine = testLine;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                }
+            });
+            if (currentLine) lines.push(currentLine);
+
+            lines.forEach((line, index) => {
+                ctx.fillText(line, 0, -lines.length * 6 + index * 12);
+            });
+
+            ctx.restore();
+        };
+
+        const drawConversationIndicator = (unit, size) => {
+            // Small chat icon to show unit is conversational
+            ctx.save();
+            ctx.translate(size * 0.8, -size * 0.8);
+
+            ctx.fillStyle = 'rgba(100, 200, 255, 0.8)';
+            ctx.strokeStyle = 'rgba(50, 150, 255, 1.0)';
+            ctx.lineWidth = 1;
+            ctx.shadowColor = 'rgba(100, 200, 255, 0.5)';
+            ctx.shadowBlur = 5;
+
+            // Chat bubble icon
+            ctx.beginPath();
+            ctx.roundRect(-8, -6, 16, 12, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Chat dots
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(-4, 0, 1.5, 0, Math.PI * 2);
+            ctx.arc(0, 0, 1.5, 0, Math.PI * 2);
+            ctx.arc(4, 0, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        };
+
+        const drawNeedsIndicator = (unit, size) => {
+            if (unit.needs.current.length === 0) return;
+
+            ctx.save();
+            ctx.translate(-size * 0.8, -size * 0.8);
+
+            // Exclamation mark for needs
+            const urgencyColor = unit.needs.current.some(n => n.urgency === 'high') ?
+                'rgba(255, 100, 100, 0.9)' : 'rgba(255, 200, 100, 0.9)';
+
+            ctx.fillStyle = urgencyColor;
+            ctx.strokeStyle = 'rgba(200, 50, 50, 1.0)';
+            ctx.lineWidth = 1;
+            ctx.shadowColor = urgencyColor;
+            ctx.shadowBlur = 5;
+
+            // Exclamation background
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Exclamation mark
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('!', 0, 4);
+
+            ctx.restore();
+        };
+
+        // Conversation interaction system
+        let selectedConversationalUnit = null;
+        let conversationDialog = null;
+
+        const createConversationDialog = (unit) => {
+            // Remove existing dialog
+            if (conversationDialog) {
+                conversationDialog.remove();
+            }
+
+            conversationDialog = document.createElement('div');
+            conversationDialog.className = 'conversation-dialog';
+            conversationDialog.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, rgba(30, 27, 75, 0.95), rgba(49, 46, 129, 0.95));
+                border: 2px solid rgba(139, 92, 246, 0.5);
+                border-radius: 15px;
+                padding: 20px;
+                max-width: 500px;
+                width: 90%;
+                color: white;
+                font-family: 'Inter', sans-serif;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(10px);
+                z-index: 1000;
+            `;
+
+            conversationDialog.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: ${unit.color}; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        ${unit.type === 'philosopherDreamer' ? '🧙‍♂️' : unit.type === 'artisticWeaver' ? '🎨' : '🔍'}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #A78BFA;">${unit.type.replace(/([A-Z])/g, ' $1').trim()}</h3>
+                        <p style="margin: 0; font-size: 12px; color: #C4B5FD;">Mood: ${unit.personality.mood} • Traits: ${unit.personality.traits.slice(0, 2).join(', ')}</p>
+                    </div>
+                    <button onclick="closeConversationDialog()" style="margin-left: auto; background: none; border: none; color: #9CA3AF; font-size: 20px; cursor: pointer;">×</button>
+                </div>
+
+                <div id="conversation-content" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                    <div style="background: rgba(139, 92, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="font-size: 12px; color: #A78BFA; margin-bottom: 5px;">${unit.type}:</div>
+                        <div id="unit-response">Generating response...</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="player-input" placeholder="What would you like to say?"
+                           style="flex: 1; padding: 10px; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; background: rgba(0, 0, 0, 0.2); color: white;" />
+                    <button onclick="sendMessage()" style="padding: 10px 20px; background: linear-gradient(45deg, #8B5CF6, #A855F7); border: none; border-radius: 8px; color: white; cursor: pointer;">Send</button>
+                </div>
+
+                ${unit.needs.current.length > 0 ? `
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 4px solid #EF4444;">
+                        <div style="font-size: 12px; color: #FCA5A5; margin-bottom: 5px;">Current Needs:</div>
+                        ${unit.needs.current.map(need => `<div style="font-size: 11px; color: #FED7D7;">• ${need.description}</div>`).join('')}
+                    </div>
+                ` : ''}
+
+                ${unit.creativity.ideas.length > 0 ? `
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(236, 72, 153, 0.1); border-radius: 8px; border-left: 4px solid #EC4899;">
+                        <div style="font-size: 12px; color: #F9A8D4; margin-bottom: 5px;">Creative Ideas:</div>
+                        ${unit.creativity.ideas.slice(0, 2).map(idea => `<div style="font-size: 11px; color: #FBCFE8;">• ${idea.title}: ${idea.description}</div>`).join('')}
+                    </div>
+                ` : ''}
+            `;
+
+            document.body.appendChild(conversationDialog);
+
+            // Generate initial response
+            generateLLMDialogue(unit).then(response => {
+                document.getElementById('unit-response').textContent = response;
+            });
+
+            // Focus input
+            document.getElementById('player-input').focus();
+
+            // Enter key handler
+            document.getElementById('player-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        };
+
         // --- Grok API Integration with Popup ---
         async function callGrok(prompt, button, systemPrompt = "") {
             if (button) {
@@ -2521,6 +3349,65 @@
             if (countElement) {
                 countElement.textContent = gameState.intelligentCreatures.length;
             }
+        };
+
+        // --- TDD: Conversational AI Global Functions ---
+        window.spawnConversationalUnit = (type) => {
+            const unit = spawnConversationalUnit(type);
+            updateConversationalCount();
+            return unit;
+        };
+
+        const updateConversationalCount = () => {
+            const countElement = document.getElementById('conversational-count');
+            if (countElement) {
+                countElement.textContent = gameState.conversationalUnits.length;
+            }
+        };
+
+        window.closeConversationDialog = () => {
+            if (conversationDialog) {
+                conversationDialog.remove();
+                conversationDialog = null;
+                selectedConversationalUnit = null;
+            }
+        };
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('player-input');
+            const content = document.getElementById('conversation-content');
+
+            if (!input.value.trim() || !selectedConversationalUnit) return;
+
+            const playerMessage = input.value.trim();
+            input.value = '';
+
+            // Add player message to conversation
+            const playerDiv = document.createElement('div');
+            playerDiv.style.cssText = 'background: rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 10px;';
+            playerDiv.innerHTML = `
+                <div style="font-size: 12px; color: #34D399; margin-bottom: 5px;">You:</div>
+                <div>${playerMessage}</div>
+            `;
+            content.appendChild(playerDiv);
+
+            // Generate unit response
+            const response = await generateLLMDialogue(selectedConversationalUnit, playerMessage);
+
+            // Add unit response
+            const unitDiv = document.createElement('div');
+            unitDiv.style.cssText = 'background: rgba(139, 92, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 10px;';
+            unitDiv.innerHTML = `
+                <div style="font-size: 12px; color: #A78BFA; margin-bottom: 5px;">${selectedConversationalUnit.type}:</div>
+                <div>${response}</div>
+            `;
+            content.appendChild(unitDiv);
+
+            // Improve relationship
+            selectedConversationalUnit.playerRelationship = Math.min(1.0, selectedConversationalUnit.playerRelationship + 0.05);
+
+            // Scroll to bottom
+            content.scrollTop = content.scrollHeight;
         };
 
         // --- Game Logic ---
@@ -2746,6 +3633,16 @@
                     };
 
                     log(`Moved ${dragState.draggedUnit.type} to new location`, 'info');
+                } else {
+                    // Check for conversational unit clicks
+                    const coords = getCanvasCoordinates(e);
+                    const conversationalUnit = getConversationalUnitAtPosition(coords.x, coords.y);
+
+                    if (conversationalUnit) {
+                        selectedConversationalUnit = conversationalUnit;
+                        createConversationDialog(conversationalUnit);
+                        log(`Started conversation with ${conversationalUnit.type}`, 'info');
+                    }
                 }
 
                 dragState.isDragging = false;
