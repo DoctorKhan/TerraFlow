@@ -190,7 +190,7 @@
                     💬 AI
                 </button>
                 <button id="tab-progress" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all" onclick="switchTab('progress')" title="Achievements & Goals (Hotkey: 5)">
-                    🏆 Progress
+                    ⭐ Goals
                 </button>
             </div>
 
@@ -279,7 +279,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <h3 class="text-sm font-medium text-white mb-2">🏆 Recent Achievements</h3>
+                            <h3 class="text-sm font-medium text-white mb-2">⭐ Recent Achievements</h3>
                             <div id="recent-achievements" class="space-y-2">
                                 <!-- Recent achievements will be populated here -->
                             </div>
@@ -862,6 +862,9 @@
 
             // TDD: Draw drag-and-drop visual effects
             drawDragEffects();
+
+            // TDD: Draw unit identification particles
+            drawUnitIdentificationEffects();
 
             // Ambient light effects
             drawAmbientEffects();
@@ -1676,6 +1679,220 @@
             }
         };
 
+        // --- TDD: Unit Identification Visual Effects ---
+
+        const drawUnitIdentificationEffects = () => {
+            // Draw subtle identification particles around units for better recognition
+            gameState.villageGrid.forEach(unit => {
+                if (unit.movable && Math.random() < 0.3) { // 30% chance per frame for performance
+                    drawUnitTypeParticles(unit);
+                }
+            });
+
+            gameState.intelligentCreatures.forEach(creature => {
+                if (Math.random() < 0.2) { // 20% chance per frame
+                    drawCreatureTypeParticles(creature);
+                }
+            });
+
+            gameState.conversationalUnits.forEach(unit => {
+                if (Math.random() < 0.25) { // 25% chance per frame
+                    drawConversationalTypeParticles(unit);
+                }
+            });
+        };
+
+        const drawUnitTypeParticles = (unit) => {
+            const particleConfigs = {
+                dreamer: {
+                    color: 'rgba(139, 92, 246, 0.6)',
+                    shape: 'sparkle',
+                    count: 2,
+                    size: 2,
+                    drift: { x: 0, y: -1 }
+                },
+                weaver: {
+                    color: 'rgba(52, 211, 153, 0.6)',
+                    shape: 'thread',
+                    count: 1,
+                    size: 1,
+                    drift: { x: Math.sin(animationTime) * 0.5, y: 0 }
+                },
+                stellarNomads: {
+                    color: 'rgba(245, 158, 11, 0.7)',
+                    shape: 'star_dust',
+                    count: 3,
+                    size: 1.5,
+                    drift: { x: Math.cos(animationTime * 2) * 0.3, y: Math.sin(animationTime * 2) * 0.3 }
+                },
+                voidWhisperers: {
+                    color: 'rgba(107, 33, 168, 0.5)',
+                    shape: 'void_mote',
+                    count: 2,
+                    size: 1,
+                    drift: { x: Math.random() * 0.4 - 0.2, y: Math.random() * 0.4 - 0.2 }
+                },
+                crystalBeings: {
+                    color: 'rgba(6, 182, 212, 0.6)',
+                    shape: 'crystal_shard',
+                    count: 1,
+                    size: 2,
+                    drift: { x: 0, y: Math.sin(animationTime * 3) * 0.2 }
+                },
+                plasmaDancers: {
+                    color: 'rgba(236, 72, 153, 0.7)',
+                    shape: 'plasma_wisp',
+                    count: 4,
+                    size: 1,
+                    drift: { x: Math.cos(animationTime * 4) * 0.5, y: Math.sin(animationTime * 4) * 0.5 }
+                },
+                quantumSages: {
+                    color: 'rgba(139, 92, 246, 0.4)',
+                    shape: 'quantum_dot',
+                    count: 3,
+                    size: 1,
+                    drift: { x: Math.random() * 0.6 - 0.3, y: Math.random() * 0.6 - 0.3 }
+                },
+                nebulaShepherds: {
+                    color: 'rgba(221, 160, 221, 0.5)',
+                    shape: 'cosmic_dust',
+                    count: 5,
+                    size: 0.8,
+                    drift: { x: Math.sin(animationTime * 0.5) * 0.3, y: Math.cos(animationTime * 0.5) * 0.3 }
+                }
+            };
+
+            const config = particleConfigs[unit.type];
+            if (!config) return;
+
+            ctx.save();
+
+            for (let i = 0; i < config.count; i++) {
+                const angle = (i * Math.PI * 2) / config.count + animationTime;
+                const radius = unit.size * (1.5 + Math.sin(animationTime + i) * 0.3);
+                const particleX = unit.x + Math.cos(angle) * radius + config.drift.x;
+                const particleY = unit.y + Math.sin(angle) * radius + config.drift.y;
+
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = config.color;
+                ctx.shadowColor = config.color;
+                ctx.shadowBlur = 5;
+
+                if (config.shape === 'sparkle') {
+                    drawSparkle(particleX, particleY, config.size);
+                } else if (config.shape === 'thread') {
+                    drawThread(particleX, particleY, config.size);
+                } else if (config.shape === 'star_dust') {
+                    drawStarDust(particleX, particleY, config.size);
+                } else {
+                    // Default particle
+                    ctx.beginPath();
+                    ctx.arc(particleX, particleY, config.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        };
+
+        const drawSparkle = (x, y, size) => {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.lineWidth = 1;
+
+            // Draw sparkle cross
+            ctx.beginPath();
+            ctx.moveTo(-size, 0);
+            ctx.lineTo(size, 0);
+            ctx.moveTo(0, -size);
+            ctx.lineTo(0, size);
+            ctx.stroke();
+
+            ctx.restore();
+        };
+
+        const drawThread = (x, y, size) => {
+            ctx.save();
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.lineWidth = size;
+
+            const threadLength = size * 4;
+            ctx.beginPath();
+            ctx.moveTo(x - threadLength/2, y);
+            ctx.lineTo(x + threadLength/2, y);
+            ctx.stroke();
+
+            ctx.restore();
+        };
+
+        const drawStarDust = (x, y, size) => {
+            ctx.save();
+            ctx.translate(x, y);
+
+            // Small 4-pointed star
+            ctx.beginPath();
+            for (let i = 0; i < 4; i++) {
+                const angle = (i * Math.PI * 2) / 4;
+                const px = Math.cos(angle) * size;
+                const py = Math.sin(angle) * size;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        };
+
+        const drawCreatureTypeParticles = (creature) => {
+            // Simple aura particles for intelligent creatures
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = creature.glowColor + '40'; // Add alpha
+
+            const particleCount = 2;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = animationTime + (i * Math.PI * 2) / particleCount;
+                const radius = creature.size * (1.8 + Math.sin(animationTime * 2 + i) * 0.4);
+                const particleX = creature.x + Math.cos(angle) * radius;
+                const particleY = creature.y + Math.sin(angle) * radius;
+
+                ctx.beginPath();
+                ctx.arc(particleX, particleY, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        };
+
+        const drawConversationalTypeParticles = (unit) => {
+            // Thought-like particles for conversational units
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = unit.glowColor + '50'; // Add alpha
+
+            const particleCount = 3;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = animationTime * 0.5 + (i * Math.PI * 2) / particleCount;
+                const radius = unit.size * (2 + Math.sin(animationTime + i) * 0.5);
+                const particleX = unit.x + Math.cos(angle) * radius;
+                const particleY = unit.y + Math.sin(angle) * radius - 5; // Float upward
+
+                // Draw small thought bubble
+                ctx.beginPath();
+                ctx.arc(particleX, particleY, 1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Smaller bubble
+                ctx.beginPath();
+                ctx.arc(particleX + 2, particleY - 2, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        };
+
         const getCanvasCoordinates = (event) => {
             const rect = canvas.getBoundingClientRect();
             return {
@@ -1775,6 +1992,10 @@
                 drawCrystalBeingUnit(unit, glowIntensity);
             } else if (unit.type === 'plasmaDancers') {
                 drawPlasmaDancerUnit(unit, glowIntensity);
+            } else if (unit.type === 'quantumSages') {
+                drawQuantumSageUnit(unit, glowIntensity);
+            } else if (unit.type === 'nebulaShepherds') {
+                drawNebulaShepherdUnit(unit, glowIntensity);
             } else {
                 // Default fallback
                 drawDefaultUnit(unit, glowIntensity);
@@ -2211,6 +2432,198 @@
             ctx.closePath();
             ctx.fillStyle = plasmaGradient;
             ctx.fill();
+            ctx.restore();
+        };
+
+        const drawQuantumSageUnit = (unit, glowIntensity) => {
+            const pulse = 1 + Math.sin(animationTime * 1.8 + (unit.animationOffset || 0)) * 0.12;
+            const currentSize = unit.size * pulse;
+            const quantumPhase = animationTime * 0.8;
+
+            // Quantum probability clouds - multiple overlapping forms
+            for (let i = 0; i < 3; i++) {
+                const phaseOffset = (i * Math.PI * 2) / 3;
+                const probability = 0.3 + Math.sin(quantumPhase + phaseOffset) * 0.2;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = probability;
+                ctx.shadowColor = '#8B5CF6';
+                ctx.shadowBlur = 25 * glowIntensity;
+
+                // Quantum state visualization - shifting geometric forms
+                const sides = 6 + Math.floor(Math.sin(quantumPhase + phaseOffset) * 2);
+                const stateSize = currentSize * (0.8 + Math.sin(quantumPhase * 2 + phaseOffset) * 0.3);
+
+                ctx.beginPath();
+                for (let j = 0; j < sides; j++) {
+                    const angle = (j * Math.PI * 2) / sides + quantumPhase;
+                    const radius = stateSize * (1 + Math.sin(angle * 3 + quantumPhase) * 0.1);
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    if (j === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+
+                const quantumGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, stateSize);
+                quantumGradient.addColorStop(0, 'rgba(139, 92, 246, 0.8)');
+                quantumGradient.addColorStop(0.5, 'rgba(168, 85, 247, 0.6)');
+                quantumGradient.addColorStop(1, 'rgba(196, 181, 253, 0.2)');
+
+                ctx.fillStyle = quantumGradient;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Quantum entanglement lines - connecting to other dimensions
+            ctx.save();
+            ctx.strokeStyle = 'rgba(139, 92, 246, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#8B5CF6';
+            ctx.shadowBlur = 10;
+
+            for (let i = 0; i < 4; i++) {
+                const entangleAngle = quantumPhase * 2 + (i * Math.PI * 2) / 4;
+                const entangleRadius = currentSize * (1.5 + Math.sin(quantumPhase + i) * 0.5);
+                const entangleX = Math.cos(entangleAngle) * entangleRadius;
+                const entangleY = Math.sin(entangleAngle) * entangleRadius;
+
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(entangleX, entangleY);
+                ctx.stroke();
+
+                // Quantum nodes at line ends
+                ctx.beginPath();
+                ctx.arc(entangleX, entangleY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(139, 92, 246, 0.8)';
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Central consciousness core
+            ctx.save();
+            ctx.shadowColor = '#8B5CF6';
+            ctx.shadowBlur = 20 * glowIntensity;
+
+            const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 0.4);
+            coreGradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+            coreGradient.addColorStop(0.3, 'rgba(139, 92, 246, 0.9)');
+            coreGradient.addColorStop(1, 'rgba(139, 92, 246, 0.4)');
+
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = coreGradient;
+            ctx.fill();
+            ctx.restore();
+        };
+
+        const drawNebulaShepherdUnit = (unit, glowIntensity) => {
+            const pulse = 1 + Math.sin(animationTime * 0.8 + (unit.animationOffset || 0)) * 0.08;
+            const currentSize = unit.size * pulse;
+            const nebulaFlow = animationTime * 0.3;
+
+            // Cosmic dust and gas clouds
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+
+            // Multiple nebula layers with different colors and densities
+            const nebulaLayers = [
+                { color: [255, 182, 193], density: 0.3, size: 2.5, speed: 1 },    // Pink
+                { color: [135, 206, 250], density: 0.25, size: 2.2, speed: 0.8 }, // Light blue
+                { color: [221, 160, 221], density: 0.2, size: 2.0, speed: 0.6 },  // Plum
+                { color: [255, 215, 0], density: 0.15, size: 1.8, speed: 0.4 }    // Gold
+            ];
+
+            nebulaLayers.forEach((layer, index) => {
+                const layerPhase = nebulaFlow * layer.speed + (index * Math.PI / 2);
+
+                for (let i = 0; i < 8; i++) {
+                    const cloudAngle = (i * Math.PI * 2) / 8 + layerPhase;
+                    const cloudDistance = currentSize * (layer.size + Math.sin(layerPhase + i) * 0.3);
+                    const cloudX = Math.cos(cloudAngle) * cloudDistance;
+                    const cloudY = Math.sin(cloudAngle) * cloudDistance;
+                    const cloudSize = currentSize * (0.4 + Math.sin(layerPhase * 2 + i) * 0.2);
+
+                    const cloudGradient = ctx.createRadialGradient(
+                        cloudX, cloudY, 0,
+                        cloudX, cloudY, cloudSize
+                    );
+                    cloudGradient.addColorStop(0, `rgba(${layer.color[0]}, ${layer.color[1]}, ${layer.color[2]}, ${layer.density})`);
+                    cloudGradient.addColorStop(0.6, `rgba(${layer.color[0]}, ${layer.color[1]}, ${layer.color[2]}, ${layer.density * 0.5})`);
+                    cloudGradient.addColorStop(1, `rgba(${layer.color[0]}, ${layer.color[1]}, ${layer.color[2]}, 0)`);
+
+                    ctx.beginPath();
+                    ctx.arc(cloudX, cloudY, cloudSize, 0, Math.PI * 2);
+                    ctx.fillStyle = cloudGradient;
+                    ctx.fill();
+                }
+            });
+            ctx.restore();
+
+            // Star birth points - bright stellar nurseries
+            ctx.save();
+            ctx.shadowColor = '#FFD700';
+            ctx.shadowBlur = 15 * glowIntensity;
+
+            for (let i = 0; i < 5; i++) {
+                const starAngle = nebulaFlow * 2 + (i * Math.PI * 2) / 5;
+                const starDistance = currentSize * (1.2 + Math.sin(nebulaFlow + i) * 0.4);
+                const starX = Math.cos(starAngle) * starDistance;
+                const starY = Math.sin(starAngle) * starDistance;
+                const starBrightness = 0.6 + Math.sin(nebulaFlow * 3 + i) * 0.4;
+
+                ctx.beginPath();
+                ctx.arc(starX, starY, 4, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 215, 0, ${starBrightness})`;
+                ctx.fill();
+
+                // Star formation rays
+                ctx.save();
+                ctx.translate(starX, starY);
+                ctx.strokeStyle = `rgba(255, 215, 0, ${starBrightness * 0.5})`;
+                ctx.lineWidth = 1;
+
+                for (let j = 0; j < 4; j++) {
+                    const rayAngle = (j * Math.PI * 2) / 4;
+                    const rayLength = 12 + Math.sin(nebulaFlow * 4 + i + j) * 6;
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(rayAngle) * rayLength, Math.sin(rayAngle) * rayLength);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // Central ancient consciousness
+            ctx.save();
+            ctx.shadowColor = '#DDA0DD';
+            ctx.shadowBlur = 25 * glowIntensity;
+
+            const shepherdGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 0.6);
+            shepherdGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            shepherdGradient.addColorStop(0.3, 'rgba(221, 160, 221, 0.8)');
+            shepherdGradient.addColorStop(0.7, 'rgba(147, 112, 219, 0.6)');
+            shepherdGradient.addColorStop(1, 'rgba(75, 0, 130, 0.3)');
+
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = shepherdGradient;
+            ctx.fill();
+
+            // Ancient wisdom symbols
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.font = `${currentSize * 0.4}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillText('✦', 0, 0);
+
             ctx.restore();
         };
 
@@ -4193,7 +4606,7 @@
             // Show achievement notification
             showAchievementNotification(achievement);
 
-            log(`🏆 Achievement Unlocked: ${achievement.name}!`, 'success');
+            log(`⭐ Achievement Unlocked: ${achievement.name}!`, 'success');
 
             return {
                 success: true,
@@ -4366,7 +4779,7 @@
 
             notification.innerHTML = `
                 <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 24px; margin-right: 10px;">🏆</span>
+                    <span style="font-size: 24px; margin-right: 10px;">⭐</span>
                     <div>
                         <div style="font-weight: bold; font-size: 16px;">Achievement Unlocked!</div>
                         <div style="font-size: 12px; opacity: 0.8; color: ${rarityColors[achievement.rarity] || '#666'};">${achievement.rarity?.toUpperCase() || 'COMMON'}</div>
@@ -4892,7 +5305,7 @@
             // TDD: Initialize Achievement & Goals System
             initializeAchievements();
             initializeGoals();
-            log("🏆 Achievement & Goals system initialized", "info");
+            log("⭐ Achievement & Goals system initialized", "info");
 
             // Initialize sprites
             addSprite('dome', 1);
