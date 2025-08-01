@@ -135,6 +135,25 @@
     <!-- TDD Test Runner (Hidden) -->
     <div id="test-runner" style="display: none;"></div>
 
+    <!-- TDD API Key Popup -->
+    <div id="api-key-popup" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 border border-indigo-600 p-6 rounded-lg max-w-md w-full mx-4 shadow-2xl">
+            <h3 class="text-xl font-bold text-white mb-4">🔑 Configure Grok API Key</h3>
+            <p class="text-gray-300 mb-4">To access cosmic wisdom and AI insights, please enter your Grok API key:</p>
+            <p class="text-sm text-indigo-300 mb-4">Get your API key from <a href="https://x.ai" target="_blank" class="text-blue-400 hover:text-blue-300 underline">x.ai</a></p>
+            <input type="password" id="api-key-input" class="w-full p-3 bg-gray-700 text-white rounded mb-2 border border-gray-600 focus:border-indigo-500 focus:outline-none" placeholder="Enter your Grok API key...">
+            <div id="api-key-error" class="text-red-400 text-sm mb-4 hidden"></div>
+            <div class="flex gap-3">
+                <button id="save-api-key" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition-colors">
+                    💾 Save Key
+                </button>
+                <button id="cancel-api-key" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded transition-colors">
+                    ❌ Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- Canvas & DOM Elements ---
         const canvas = document.getElementById('village-canvas');
@@ -146,7 +165,7 @@
         const seasonalVisionBtn = document.getElementById('seasonal-vision-btn');
         const advisorBtn = document.getElementById('advisor-btn');
 
-        // --- Game State (Incremental Model) ---
+        // --- Game State (Incremental Model) - TDD Races Expansion ---
         let gameState = {
             energy: 20,
             energyPerSecond: 0,
@@ -156,11 +175,24 @@
             units: {
                 dreamers: 1,  // Start with 1 dreamer for immediate insight generation
                 weavers: 1,   // Start with 1 weaver for immediate energy generation
+                stellarNomads: 0,
+                voidWhisperers: 0,
+                crystalBeings: 0,
+                plasmaDancers: 0,
+                quantumSages: 0,
+                nebulaShepherds: 0
             },
             unitCosts: {
                 dreamers: 15,  // Slightly higher since we start with units
                 weavers: 15,
+                stellarNomads: 25,
+                voidWhisperers: 40,
+                crystalBeings: 60,
+                plasmaDancers: 80,
+                quantumSages: 120,
+                nebulaShepherds: 200
             },
+            unlockedRaces: ['human'], // Start with humans unlocked
             nodes: {
                 sustenance: 0,
                 energy: 0,
@@ -178,10 +210,26 @@
             lastUpdate: Date.now(),
         };
 
-        // --- Game Config ---
+        // --- Game Config - TDD Races System ---
+        const racesConfig = {
+            human: { name: "Human", description: "The original inhabitants", color: '#8B5CF6', symbol: '👤', unlocked: true, tier: 1 },
+            stellar: { name: "Stellar Nomads", description: "Wandering star-travelers", color: '#F59E0B', symbol: '⭐', unlockCondition: { energy: 50, insight: 25 }, unlocked: false, tier: 2 },
+            void: { name: "Void Whisperers", description: "Mysterious void entities", color: '#1F2937', symbol: '🌑', unlockCondition: { harmony: 70, energy: 100 }, unlocked: false, tier: 3 },
+            crystal: { name: "Crystal Beings", description: "Living crystalline entities", color: '#10B981', symbol: '💎', unlockCondition: { energy: 200, insight: 100 }, unlocked: false, tier: 3 },
+            plasma: { name: "Plasma Dancers", description: "Pure energy beings", color: '#EF4444', symbol: '🔥', unlockCondition: { energy: 500, harmony: 80 }, unlocked: false, tier: 4 },
+            quantum: { name: "Quantum Sages", description: "Multi-dimensional beings", color: '#8B5CF6', symbol: '🌀', unlockCondition: { insight: 500, harmony: 85 }, unlocked: false, tier: 5 },
+            nebula: { name: "Nebula Shepherds", description: "Ancient star-birthers", color: '#A78BFA', symbol: '🌌', unlockCondition: { energy: 1000, insight: 800, harmony: 95 }, unlocked: false, tier: 5 }
+        };
+
         const unitsConfig = {
-            dreamers: { name: "Dreamer", description: "Generates Insight.", baseInsight: 0.1, costResource: 'energy' },
-            weavers: { name: "Weaver", description: "Generates Energy.", baseEnergy: 1, costResource: 'insight' },
+            dreamers: { name: "Dreamer", description: "Generates Insight through cosmic meditation.", baseInsight: 0.1, costResource: 'energy', race: 'human', special: 'dreamVision' },
+            weavers: { name: "Weaver", description: "Generates Energy by weaving cosmic threads.", baseEnergy: 0.1, costResource: 'insight', race: 'human', special: 'energyWeaving' },
+            stellarNomads: { name: "Stellar Nomad", description: "Star-travelers generating Energy and Insight.", baseEnergy: 0.15, baseInsight: 0.05, costResource: 'energy', race: 'stellar', special: 'stellarNavigation' },
+            voidWhisperers: { name: "Void Whisperer", description: "Void communers generating Insight and Harmony.", baseInsight: 0.08, baseHarmony: 0.02, costResource: 'insight', race: 'void', special: 'voidCommunion' },
+            crystalBeings: { name: "Crystal Being", description: "Living crystals amplifying cosmic energy.", baseEnergy: 0.2, costResource: 'energy', race: 'crystal', special: 'crystalResonance' },
+            plasmaDancers: { name: "Plasma Dancer", description: "Pure energy beings dancing through plasma.", baseEnergy: 0.3, costResource: 'insight', race: 'plasma', special: 'plasmaManipulation' },
+            quantumSages: { name: "Quantum Sage", description: "Multi-dimensional beings with vast knowledge.", baseInsight: 0.5, costResource: 'energy', race: 'quantum', special: 'quantumEntanglement' },
+            nebulaShepherds: { name: "Nebula Shepherd", description: "Ancient beings birthing stars.", baseEnergy: 0.8, baseInsight: 0.3, baseHarmony: 0.1, costResource: 'insight', race: 'nebula', special: 'starBirth' }
         };
 
         const nodesConfig = {
@@ -222,6 +270,34 @@
 
         // TDD Fix: Stable button rendering that doesn't recreate buttons
         let unitsInitialized = false;
+
+        // TDD Races: Check for newly unlocked races
+        const checkRaceUnlocks = () => {
+            let newlyUnlocked = [];
+
+            Object.entries(racesConfig).forEach(([raceKey, race]) => {
+                if (!gameState.unlockedRaces.includes(raceKey) && !race.unlocked) {
+                    if (!race.unlockCondition) {
+                        gameState.unlockedRaces.push(raceKey);
+                        race.unlocked = true;
+                        newlyUnlocked.push(raceKey);
+                    } else {
+                        const canUnlock = Object.entries(race.unlockCondition).every(([resource, required]) => {
+                            return gameState[resource] >= required;
+                        });
+
+                        if (canUnlock) {
+                            gameState.unlockedRaces.push(raceKey);
+                            race.unlocked = true;
+                            newlyUnlocked.push(raceKey);
+                            log(`🌟 New race discovered: ${race.name}! ${race.description}`, 'success');
+                        }
+                    }
+                }
+            });
+
+            return newlyUnlocked;
+        };
 
         const renderUnits = () => {
             // Only create buttons once, then update their states
@@ -778,7 +854,45 @@
             }
         };
 
-        // --- Grok API Integration ---
+        // --- TDD API Key Management ---
+        const getApiKey = () => {
+            return localStorage.getItem('grok_api_key') || '';
+        };
+
+        const saveApiKey = (key) => {
+            if (key && key.trim() && key.length >= 10) {
+                localStorage.setItem('grok_api_key', key.trim());
+                return true;
+            }
+            return false;
+        };
+
+        const showApiKeyPopup = () => {
+            const popup = document.getElementById('api-key-popup');
+            const input = document.getElementById('api-key-input');
+            const error = document.getElementById('api-key-error');
+
+            popup.classList.remove('hidden');
+            input.focus();
+            error.classList.add('hidden');
+            error.textContent = '';
+        };
+
+        const hideApiKeyPopup = () => {
+            const popup = document.getElementById('api-key-popup');
+            const input = document.getElementById('api-key-input');
+
+            popup.classList.add('hidden');
+            input.value = '';
+        };
+
+        const showApiKeyError = (message) => {
+            const error = document.getElementById('api-key-error');
+            error.textContent = message;
+            error.classList.remove('hidden');
+        };
+
+        // --- Grok API Integration with Popup ---
         async function callGrok(prompt, button, systemPrompt = "") {
             if (button) {
                 button.disabled = true;
@@ -787,9 +901,10 @@
             }
 
             try {
-                const apiKey = ""; // Add your Grok API key here
+                const apiKey = getApiKey();
                 if (!apiKey) {
-                    throw new Error("Grok API key not configured");
+                    showApiKeyPopup();
+                    throw new Error("API key required - popup shown");
                 }
 
                 const apiUrl = "https://api.x.ai/v1/chat/completions";
@@ -962,11 +1077,68 @@
         // --- Initialization ---
         const init = () => {
             log("Welcome, Weaver. The sanctuary awakens with your first Dreamer and Weaver.", "success");
-            log("Watch as they generate resources and expand your mystical realm.", "info");
+            log("🔑 Grok API integration ready - key will be requested when needed", "info");
+
+            // Initialize sprites
             addSprite('dome', 1);
             addSprite('crystal_tree', 1);
+
+            // Initialize event listeners
             advisorBtn.addEventListener('click', getAdvisorInsight);
             seasonalVisionBtn.addEventListener('click', getSeasonalVision);
+
+            // TDD API Key Popup Event Listeners
+            const saveKeyBtn = document.getElementById('save-api-key');
+            const cancelKeyBtn = document.getElementById('cancel-api-key');
+            const apiKeyInput = document.getElementById('api-key-input');
+
+            saveKeyBtn.addEventListener('click', () => {
+                const key = apiKeyInput.value.trim();
+
+                if (!key) {
+                    showApiKeyError('Please enter an API key');
+                    return;
+                }
+
+                if (key.length < 10) {
+                    showApiKeyError('API key seems too short. Please check your key.');
+                    return;
+                }
+
+                if (key.includes(' ')) {
+                    showApiKeyError('API key should not contain spaces');
+                    return;
+                }
+
+                if (saveApiKey(key)) {
+                    hideApiKeyPopup();
+                    log('🔑 Grok API key saved successfully! You can now access cosmic wisdom.', 'success');
+                } else {
+                    showApiKeyError('Failed to save API key. Please try again.');
+                }
+            });
+
+            cancelKeyBtn.addEventListener('click', () => {
+                hideApiKeyPopup();
+            });
+
+            // Handle Enter key in API key input
+            apiKeyInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveKeyBtn.click();
+                }
+            });
+
+            // Handle Escape key to close popup
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const popup = document.getElementById('api-key-popup');
+                    if (!popup.classList.contains('hidden')) {
+                        hideApiKeyPopup();
+                    }
+                }
+            });
+
             runTests(); // Run TDD tests on startup
             gameLoop();
         };
