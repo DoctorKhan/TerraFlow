@@ -3487,6 +3487,137 @@
             });
         };
 
+        // --- TDD: Unit Interactions & Synergy System ---
+
+        const detectNearbyUnits = (unit, allUnits, interactionRadius = 60) => {
+            const nearbyUnits = [];
+
+            allUnits.forEach(otherUnit => {
+                if (otherUnit.id === unit.id) return;
+
+                const distance = Math.sqrt(
+                    Math.pow(otherUnit.x - unit.x, 2) +
+                    Math.pow(otherUnit.y - unit.y, 2)
+                );
+
+                if (distance <= interactionRadius) {
+                    nearbyUnits.push({
+                        unit: otherUnit,
+                        distance: distance,
+                        interactionType: determineInteractionType(unit, otherUnit)
+                    });
+                }
+            });
+
+            return nearbyUnits;
+        };
+
+        const determineInteractionType = (unit1, unit2) => {
+            const interactions = {
+                'dreamer-weaver': 'inspiration',
+                'weaver-dreamer': 'inspiration',
+                'philosopherDreamer-artisticWeaver': 'creative_collaboration',
+                'artisticWeaver-philosopherDreamer': 'creative_collaboration',
+                'curiousExplorer-philosopherDreamer': 'knowledge_sharing',
+                'philosopherDreamer-curiousExplorer': 'knowledge_sharing'
+            };
+
+            const key1 = `${unit1.type}-${unit2.type}`;
+            const key2 = `${unit2.type}-${unit1.type}`;
+
+            return interactions[key1] || interactions[key2] || 'general_synergy';
+        };
+
+        const updateUnitInteractions = (deltaTime) => {
+            const currentTime = Date.now();
+
+            // Clean up expired interactions
+            gameState.activeInteractions = gameState.activeInteractions.filter(interaction => {
+                return currentTime - interaction.startTime < interaction.duration;
+            });
+
+            // Check for new interactions between all units
+            const allUnits = [
+                ...gameState.villageGrid.filter(unit => unit.movable),
+                ...gameState.intelligentCreatures,
+                ...gameState.conversationalUnits
+            ];
+
+            allUnits.forEach(unit => {
+                const nearbyUnits = detectNearbyUnits(unit, allUnits);
+
+                nearbyUnits.forEach(nearby => {
+                    // Check if interaction already exists
+                    const existingInteraction = gameState.activeInteractions.find(interaction =>
+                        (interaction.participants.includes(unit.id) && interaction.participants.includes(nearby.unit.id))
+                    );
+
+                    if (!existingInteraction && Math.random() < 0.01) { // 1% chance per frame to start interaction
+                        createInteraction(unit, nearby.unit, nearby.interactionType);
+                    }
+                });
+            });
+
+            // Apply interaction effects
+            gameState.activeInteractions.forEach(interaction => {
+                applyInteractionEffects(interaction, deltaTime);
+            });
+        };
+
+        const createInteraction = (unit1, unit2, interactionType) => {
+            const interaction = {
+                id: `${unit1.id}_${unit2.id}_${Date.now()}`,
+                participants: [unit1.id, unit2.id],
+                type: interactionType,
+                startTime: Date.now(),
+                duration: 5000,
+                effects: [],
+                active: true
+            };
+
+            // Define interaction effects
+            switch (interactionType) {
+                case 'inspiration':
+                    interaction.effects = [
+                        { type: 'resource_generation', resource: 'inspiration', amount: 2 }
+                    ];
+                    break;
+
+                case 'creative_collaboration':
+                    interaction.effects = [
+                        { type: 'resource_generation', resource: 'inspiration', amount: 3 },
+                        { type: 'resource_generation', resource: 'insight', amount: 1 }
+                    ];
+                    break;
+
+                case 'knowledge_sharing':
+                    interaction.effects = [
+                        { type: 'resource_generation', resource: 'wisdom', amount: 2 },
+                        { type: 'resource_generation', resource: 'insight', amount: 1 }
+                    ];
+                    break;
+
+                default:
+                    interaction.effects = [
+                        { type: 'resource_generation', resource: 'inspiration', amount: 1 }
+                    ];
+            }
+
+            gameState.activeInteractions.push(interaction);
+            log(`${unit1.type} and ${unit2.type} begin ${interactionType}!`, 'info');
+        };
+
+        const applyInteractionEffects = (interaction, deltaTime) => {
+            interaction.effects.forEach(effect => {
+                if (effect.type === 'resource_generation') {
+                    const amount = effect.amount * deltaTime;
+                    if (gameState[effect.resource] !== undefined) {
+                        gameState[effect.resource] += amount;
+                    }
+                }
+            });
+        };
+
         // --- Grok API Integration with Popup ---
         async function callGrok(prompt, button, systemPrompt = "") {
             if (button) {
