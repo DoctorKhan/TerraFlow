@@ -656,12 +656,9 @@
                         </div>
                     </div>
 
-                    <!-- Unit Controls -->
+                    <!-- Help -->
                     <div class="bg-gray-900 bg-opacity-90 rounded-lg p-1 border border-gray-600">
-                        <div class="flex space-x-1">
-                            <button id="auto-arrange-btn" class="bg-purple-700 hover:bg-purple-600 text-white text-xs px-2 py-1 rounded" title="Auto-Arrange Units">📐</button>
-                            <button id="add-units-btn" class="bg-green-700 hover:bg-green-600 text-white text-xs px-2 py-1 rounded" title="Add Test Units">➕</button>
-                        </div>
+                        <button id="help-btn" class="bg-blue-700 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded" title="Show Controls Help">❓ Help</button>
                     </div>
                 </div>
 
@@ -1877,15 +1874,6 @@
         const resetView = () => {
             canvasState.zoom = 1.0;
 
-            // Add units if none exist
-            if (gameState.villageGrid.length === 0) {
-                addSprite('dreamer', 3);
-                addSprite('weaver', 2);
-                addSprite('dome', 1);
-                addSprite('crystal_tree', 1);
-                log('🎮 Added initial units to the sanctuary', 'success');
-            }
-
             // Center view on existing units if any
             if (gameState.villageGrid.length > 0) {
                 let minX = Infinity, maxX = -Infinity;
@@ -1903,55 +1891,27 @@
 
                 canvasState.panX = canvasState.width / 2 - centerX;
                 canvasState.panY = canvasState.height / 2 - centerY;
+
+                log('🎯 View centered on your sanctuary', 'info');
             } else {
                 canvasState.panX = 0;
                 canvasState.panY = 0;
+                log('🎯 View reset to center (no units to focus on)', 'info');
+                log('💡 Tip: Create units using the Units tab or hotkeys (D for Dreamer, W for Weaver)', 'info');
             }
-
-            log('🎯 View reset and centered on units', 'info');
         };
 
-        const autoArrangeUnits = () => {
-            const units = gameState.villageGrid;
-            if (units.length === 0) return;
 
-            // Calculate grid layout
-            const cols = Math.ceil(Math.sqrt(units.length));
-            const rows = Math.ceil(units.length / cols);
 
-            const safeWidth = canvasState.width - canvasState.safeZone.left - canvasState.safeZone.right;
-            const safeHeight = canvasState.height - canvasState.safeZone.top - canvasState.safeZone.bottom;
-
-            const cellWidth = safeWidth / cols;
-            const cellHeight = safeHeight / rows;
-
-            units.forEach((unit, index) => {
-                const col = index % cols;
-                const row = Math.floor(index / cols);
-
-                unit.x = canvasState.safeZone.left + col * cellWidth + cellWidth / 2;
-                unit.y = canvasState.safeZone.top + row * cellHeight + cellHeight / 2;
-
-                // Update movement targets
-                if (unit.targetX !== undefined) {
-                    unit.targetX = unit.x;
-                    unit.targetY = unit.y;
-                }
-                if (unit.wanderCenter) {
-                    unit.wanderCenter = { x: unit.x, y: unit.y };
-                }
-            });
-
-            log('🎯 Units have been automatically arranged in a grid pattern.', 'info');
-        };
-
-        const addTestUnits = () => {
-            addSprite('dreamer', 2);
-            addSprite('weaver', 2);
-            addSprite('dome', 1);
-            addSprite('crystal_tree', 1);
-            addSprite('garden', 1);
-            log('➕ Added test units to the sanctuary', 'success');
+        const showControlsHelp = () => {
+            log('🎮 CONTROLS HELP:', 'info');
+            log('🖱️ Mouse: Click and drag to pan the view', 'info');
+            log('🔍 Zoom: Use +/- buttons or mouse wheel', 'info');
+            log('🎯 Reset: Center view on your units', 'info');
+            log('⌨️ Hotkeys: D = Dreamer, W = Weaver', 'info');
+            log('🏗️ Build: Use the Units tab to create beings', 'info');
+            log('🌱 Paths: Choose Ruler or Gardener approach', 'info');
+            log('🔄 New Game: Red button to start fresh', 'info');
         };
 
 
@@ -2042,15 +2002,13 @@
             const zoomInBtn = document.getElementById('zoom-in-btn');
             const zoomOutBtn = document.getElementById('zoom-out-btn');
             const resetViewBtn = document.getElementById('reset-view-btn');
-            const autoArrangeBtn = document.getElementById('auto-arrange-btn');
-            const addUnitsBtn = document.getElementById('add-units-btn');
+            const helpBtn = document.getElementById('help-btn');
 
             if (newGameBtn) newGameBtn.addEventListener('click', startNewGame);
             if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
             if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
             if (resetViewBtn) resetViewBtn.addEventListener('click', resetView);
-            if (autoArrangeBtn) autoArrangeBtn.addEventListener('click', autoArrangeUnits);
-            if (addUnitsBtn) addUnitsBtn.addEventListener('click', addTestUnits);
+            if (helpBtn) helpBtn.addEventListener('click', showControlsHelp);
 
             // Mouse wheel zoom
             canvas.addEventListener('wheel', (e) => {
