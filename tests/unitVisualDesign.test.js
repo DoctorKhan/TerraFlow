@@ -28,7 +28,8 @@ describe('Unit Visual Design Tests', () => {
             measureText: jest.fn(() => ({ width: 100 })),
             fillText: jest.fn(),
             strokeText: jest.fn(),
-            ellipse: jest.fn()
+            ellipse: jest.fn(),
+            bezierCurveTo: jest.fn()
         };
 
         global.ctx = mockCtx;
