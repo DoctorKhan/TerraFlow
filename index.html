@@ -39,6 +39,33 @@
             background-color: #4a5568;
             opacity: 0.7;
         }
+
+        /* TDD Fix: Custom scrollbar for log output */
+        #log-output {
+            scrollbar-width: thin;
+            scrollbar-color: #4c1d95 #1e1b4b;
+        }
+        #log-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        #log-output::-webkit-scrollbar-track {
+            background: #1e1b4b;
+            border-radius: 4px;
+        }
+        #log-output::-webkit-scrollbar-thumb {
+            background: #4c1d95;
+            border-radius: 4px;
+        }
+        #log-output::-webkit-scrollbar-thumb:hover {
+            background: #5b21b6;
+        }
+
+        /* Ensure log entries don't break layout */
+        .log-entry {
+            word-wrap: break-word;
+            line-height: 1.4;
+            margin-bottom: 0.25rem;
+        }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
@@ -97,10 +124,12 @@
 
     </div>
 
-    <!-- Bottom Bar: Log -->
-    <footer id="log-panel" class="w-full p-4 border-t border-indigo-900 overflow-y-auto">
-        <h3 class="font-semibold text-lg mb-2 text-indigo-200">Aetheric Log</h3>
-        <div id="log-output" class="text-sm text-indigo-300 space-y-1"></div>
+    <!-- Bottom Bar: Log - TDD Fixed Height with Scrolling -->
+    <footer id="log-panel" class="w-full border-t border-indigo-900" style="height: 200px; min-height: 200px; max-height: 200px;">
+        <div class="p-4 h-full flex flex-col">
+            <h3 class="font-semibold text-lg mb-2 text-indigo-200 flex-shrink-0">Aetheric Log</h3>
+            <div id="log-output" class="text-sm text-indigo-300 space-y-1 flex-1 overflow-y-auto pr-2"></div>
+        </div>
     </footer>
     
     <!-- TDD Test Runner (Hidden) -->
