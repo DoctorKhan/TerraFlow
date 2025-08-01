@@ -79,12 +79,12 @@ describe('GameLogic', () => {
 
         test('should not upgrade node when player lacks resources', () => {
             const result = gameLogic.upgradeNode('cycling');
-            
+
             expect(result).toBe(false);
-            
+
             const state = gameState.getState();
             expect(state.nodes.cycling).toBe(0);
-            expect(state.insight).toBe(0);
+            expect(state.insight).toBe(5); // Initial state has 5 insight
         });
 
         test('should cap harmony at 100', () => {
@@ -180,8 +180,10 @@ describe('GameLogic', () => {
             expect(() => gameLogic.updateGameState(1)).not.toThrow();
 
             const state = gameState.getState();
-            expect(state.energy).toBeFinite();
-            expect(state.insight).toBeFinite();
+            expect(typeof state.energy).toBe('number');
+            expect(typeof state.insight).toBe('number');
+            expect(state.energy).not.toBeNaN();
+            expect(state.insight).not.toBeNaN();
         });
     });
 

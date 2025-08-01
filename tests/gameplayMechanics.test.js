@@ -28,14 +28,17 @@ describe('Gameplay Mechanics Tests', () => {
 
         test('should consume resources when creating units', () => {
             const initialState = game.getState();
-            
+            const initialDreamers = initialState.units.dreamers;
+            const initialEnergy = initialState.energy;
+
             // Create a dreamer (costs energy)
             const success = game.createUnit('dreamers');
             expect(success).toBe(true);
-            
+
             const newState = game.getState();
-            expect(newState.energy).toBeLessThan(initialState.energy);
-            expect(newState.units.dreamers).toBe(initialState.units.dreamers + 1);
+
+            expect(newState.energy).toBeLessThan(initialEnergy);
+            expect(newState.units.dreamers).toBe(initialDreamers + 1);
         });
 
         test('should prevent resource consumption when insufficient funds', () => {

@@ -9,14 +9,20 @@ class GameLogic {
     createUnit(key) {
         const state = this.gameState.getState();
         const unitConf = unitsConfig[key];
+
+        // Handle invalid unit types gracefully
+        if (!unitConf || !unitConf.costResource) {
+            return false;
+        }
+
         const cost = state.unitCosts[key];
-        
+
         if (state[unitConf.costResource] >= cost) {
             const newState = { ...state };
             newState[unitConf.costResource] -= cost;
             newState.units[key]++;
             newState.unitCosts[key] *= 1.15;
-            
+
             this.gameState.setState(newState);
             return true;
         }
@@ -26,18 +32,24 @@ class GameLogic {
     upgradeNode(key) {
         const state = this.gameState.getState();
         const nodeConf = nodesConfig[key];
+
+        // Handle invalid node types gracefully
+        if (!nodeConf || !nodeConf.costResource) {
+            return false;
+        }
+
         const cost = state.nodeCosts[key];
-        
+
         if (state[nodeConf.costResource] >= cost) {
             const newState = { ...state };
             newState[nodeConf.costResource] -= cost;
             newState.nodes[key]++;
             newState.nodeCosts[key] *= 2.5;
-            
+
             if (nodeConf.harmony) {
                 newState.harmony = Math.min(100, newState.harmony + nodeConf.harmony);
             }
-            
+
             this.gameState.setState(newState);
             return true;
         }
