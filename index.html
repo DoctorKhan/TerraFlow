@@ -7485,19 +7485,39 @@
                     position: fixed;
                     top: 20px;
                     right: 20px;
+                    bottom: 20px;
                     z-index: 1000;
                     display: flex;
                     flex-direction: column;
                     gap: 10px;
                     pointer-events: none;
+                    max-height: calc(100vh - 40px);
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    width: 320px;
                 `;
                 document.body.appendChild(container);
             }
             return container;
         };
 
+        // Limit notifications to prevent screen overflow
+        const MAX_NOTIFICATIONS = 5;
+
+        const cleanupOldNotifications = (container) => {
+            const notifications = container.children;
+            while (notifications.length >= MAX_NOTIFICATIONS) {
+                // Remove the oldest notification (first child)
+                const oldest = notifications[0];
+                oldest.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => oldest.remove(), 300);
+            }
+        };
+
         const showAchievementNotification = (achievement) => {
             const container = getNotificationContainer();
+            cleanupOldNotifications(container);
+
             const notification = document.createElement('div');
             notification.className = 'achievement-notification';
 
@@ -7546,6 +7566,8 @@
 
         const showGoalNotification = (goal) => {
             const container = getNotificationContainer();
+            cleanupOldNotifications(container);
+
             const notification = document.createElement('div');
             notification.className = 'goal-notification';
 
@@ -7592,7 +7614,7 @@
             }).join(', ');
         };
 
-        // Add CSS animations
+        // Add CSS animations and scrollbar styling
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideInRight {
@@ -7602,6 +7624,22 @@
             @keyframes slideOutRight {
                 from { transform: translateX(0); opacity: 1; }
                 to { transform: translateX(100%); opacity: 0; }
+            }
+
+            /* Custom scrollbar for notification container */
+            #notification-container::-webkit-scrollbar {
+                width: 6px;
+            }
+            #notification-container::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 3px;
+            }
+            #notification-container::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 3px;
+            }
+            #notification-container::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.5);
             }
         `;
         document.head.appendChild(style);
