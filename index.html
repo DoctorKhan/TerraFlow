@@ -639,6 +639,17 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Unit Information Panel -->
+                <div id="unit-info-panel" class="hidden mt-2 bg-gray-900 rounded-lg p-3 border border-gray-700">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="text-sm font-bold text-white">📋 Unit Information</div>
+                        <button id="close-unit-info" class="text-gray-400 hover:text-white text-xs">✕</button>
+                    </div>
+                    <div id="unit-info-content">
+                        <!-- Unit details will be populated here -->
+                    </div>
+                </div>
             </div>
 
             <!-- Village Canvas -->
@@ -665,7 +676,7 @@
 
 
                 <!-- Minimap -->
-                <div class="absolute bottom-2 right-2 bg-black bg-opacity-70 border border-gray-600 rounded">
+                <div class="absolute left-2 bg-black bg-opacity-70 border border-gray-600 rounded z-50" style="bottom: 210px;">
                     <div class="text-xs text-gray-400 px-2 py-1 border-b border-gray-600">Minimap</div>
                     <canvas id="minimap-canvas" width="120" height="90" class="block"></canvas>
                 </div>
@@ -1912,6 +1923,128 @@
             log('🏗️ Build: Use the Units tab to create beings', 'info');
             log('🌱 Paths: Choose Ruler or Gardener approach', 'info');
             log('🔄 New Game: Red button to start fresh', 'info');
+            log('👆 Click: Click on units for detailed info', 'info');
+        };
+
+        // Unit Information System
+        let selectedUnit = null;
+
+        const showUnitInfo = (unit) => {
+            selectedUnit = unit;
+            const panel = document.getElementById('unit-info-panel');
+            const content = document.getElementById('unit-info-content');
+
+            if (!panel || !content) return;
+
+            // Get unit configuration
+            const unitConfig = unitsConfig[unit.type] || {};
+
+            // Calculate unit stats
+            const nearbyUnits = detectNearbyUnits(unit, gameState.villageGrid, 60);
+            const interactions = gameState.activeInteractions.filter(interaction =>
+                interaction.participants.includes(unit.id)
+            );
+
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <!-- Basic Info -->
+                    <div class="bg-gray-800 rounded p-2">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="text-lg">${getUnitEmoji(unit.type)}</span>
+                            <div>
+                                <div class="font-bold text-white">${unitConfig.name || unit.type}</div>
+                                <div class="text-xs text-gray-400">ID: ${unit.id}</div>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-300">${unitConfig.description || 'A mysterious being in your sanctuary.'}</div>
+                    </div>
+
+                    <!-- Position & Status -->
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-gray-800 rounded p-2">
+                            <div class="text-gray-400">Position</div>
+                            <div class="text-white">${Math.round(unit.x)}, ${Math.round(unit.y)}</div>
+                        </div>
+                        <div class="bg-gray-800 rounded p-2">
+                            <div class="text-gray-400">Size</div>
+                            <div class="text-white">${unit.size}px</div>
+                        </div>
+                        <div class="bg-gray-800 rounded p-2">
+                            <div class="text-gray-400">Movable</div>
+                            <div class="text-white">${unit.movable ? '✅ Yes' : '❌ No'}</div>
+                        </div>
+                        <div class="bg-gray-800 rounded p-2">
+                            <div class="text-gray-400">Draggable</div>
+                            <div class="text-white">${unit.draggable !== false ? '✅ Yes' : '❌ No'}</div>
+                        </div>
+                    </div>
+
+                    <!-- Nearby Units -->
+                    <div class="bg-gray-800 rounded p-2">
+                        <div class="text-gray-400 text-xs mb-1">Nearby Units (${nearbyUnits.length})</div>
+                        ${nearbyUnits.length > 0 ?
+                            nearbyUnits.slice(0, 3).map(nearby =>
+                                `<div class="text-xs text-gray-300">• ${nearby.unit.type} (${Math.round(nearby.distance)}px away)</div>`
+                            ).join('') +
+                            (nearbyUnits.length > 3 ? `<div class="text-xs text-gray-500">... and ${nearbyUnits.length - 3} more</div>` : '')
+                            : '<div class="text-xs text-gray-500">No nearby units</div>'
+                        }
+                    </div>
+
+                    <!-- Active Interactions -->
+                    ${interactions.length > 0 ? `
+                        <div class="bg-gray-800 rounded p-2">
+                            <div class="text-gray-400 text-xs mb-1">Active Interactions (${interactions.length})</div>
+                            ${interactions.slice(0, 2).map(interaction =>
+                                `<div class="text-xs text-green-300">• ${interaction.type} (${Math.round((Date.now() - interaction.startTime) / 1000)}s)</div>`
+                            ).join('')}
+                        </div>
+                    ` : ''}
+
+                    <!-- Movement Info -->
+                    ${unit.movable ? `
+                        <div class="bg-gray-800 rounded p-2">
+                            <div class="text-gray-400 text-xs mb-1">Movement</div>
+                            <div class="text-xs text-gray-300">
+                                ${unit.targetX !== undefined ?
+                                    `Target: ${Math.round(unit.targetX)}, ${Math.round(unit.targetY)}` :
+                                    'No target set'
+                                }
+                            </div>
+                            ${unit.wanderCenter ?
+                                `<div class="text-xs text-gray-300">Wander Center: ${Math.round(unit.wanderCenter.x)}, ${Math.round(unit.wanderCenter.y)}</div>` :
+                                ''
+                            }
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            panel.classList.remove('hidden');
+        };
+
+        const hideUnitInfo = () => {
+            selectedUnit = null;
+            const panel = document.getElementById('unit-info-panel');
+            if (panel) {
+                panel.classList.add('hidden');
+            }
+        };
+
+        const getUnitEmoji = (type) => {
+            const emojis = {
+                'dreamer': '💭',
+                'weaver': '🕸️',
+                'dome': '🏛️',
+                'crystal_tree': '🌳',
+                'garden': '🌸',
+                'sage': '🧙',
+                'explorer': '🗺️',
+                'philosopher': '📚',
+                'artist': '🎨',
+                'healer': '💚'
+            };
+            return emojis[type] || '👤';
         };
 
 
@@ -2003,12 +2136,14 @@
             const zoomOutBtn = document.getElementById('zoom-out-btn');
             const resetViewBtn = document.getElementById('reset-view-btn');
             const helpBtn = document.getElementById('help-btn');
+            const closeUnitInfoBtn = document.getElementById('close-unit-info');
 
             if (newGameBtn) newGameBtn.addEventListener('click', startNewGame);
             if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
             if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
             if (resetViewBtn) resetViewBtn.addEventListener('click', resetView);
             if (helpBtn) helpBtn.addEventListener('click', showControlsHelp);
+            if (closeUnitInfoBtn) closeUnitInfoBtn.addEventListener('click', hideUnitInfo);
 
             // Mouse wheel zoom
             canvas.addEventListener('wheel', (e) => {
@@ -2164,6 +2299,36 @@
                 'nebulaShepherds': '#06B6D4'
             };
             return colors[type] || '#9CA3AF';
+        };
+
+        // Minimap click navigation
+        const initializeMinimapNavigation = () => {
+            const minimapCanvas = document.getElementById('minimap-canvas');
+            if (!minimapCanvas) return;
+
+            minimapCanvas.addEventListener('click', (e) => {
+                const rect = minimapCanvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                // Calculate scale
+                const scaleX = minimapCanvas.width / canvasState.width;
+                const scaleY = minimapCanvas.height / canvasState.height;
+                const scale = Math.min(scaleX, scaleY);
+
+                // Convert minimap coordinates to world coordinates
+                const worldX = clickX / scale;
+                const worldY = clickY / scale;
+
+                // Center the view on the clicked location
+                canvasState.panX = -(worldX - canvasState.width / (2 * canvasState.zoom));
+                canvasState.panY = -(worldY - canvasState.height / (2 * canvasState.zoom));
+
+                log(`Navigated to (${Math.round(worldX)}, ${Math.round(worldY)})`, 'info');
+            });
+
+            // Add hover cursor
+            minimapCanvas.style.cursor = 'pointer';
         };
 
         const drawDebugInfo = () => {
@@ -8116,6 +8281,9 @@
             // Initialize canvas controls
             initializeCanvasControls();
 
+            // Initialize minimap navigation
+            initializeMinimapNavigation();
+
             // Initialize stats toggle
             initializeStatsToggle();
 
@@ -8236,12 +8404,16 @@
                 }
             });
 
-            // Handle Escape key to close popup
+            // Handle Escape key to close popups
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     const popup = document.getElementById('api-key-popup');
+                    const unitInfoPanel = document.getElementById('unit-info-panel');
+
                     if (!popup.classList.contains('hidden')) {
                         hideApiKeyPopup();
+                    } else if (!unitInfoPanel.classList.contains('hidden')) {
+                        hideUnitInfo();
                     }
                 }
             });
@@ -8371,18 +8543,29 @@
                     // Clean up drag state
                     unit.isDragging = false;
                 } else {
-                    // Check for conversational unit clicks (only if not dragging)
+                    // Check for unit clicks (only if not dragging)
                     const coords = getCanvasCoordinates(e);
-                    const conversationalUnit = getConversationalUnitAtPosition(coords.x, coords.y);
 
+                    // First check for conversational units
+                    const conversationalUnit = getConversationalUnitAtPosition(coords.x, coords.y);
                     if (conversationalUnit && !conversationalUnit.isDragging) {
                         selectedConversationalUnit = conversationalUnit;
                         createConversationDialog(conversationalUnit);
                         log(`Started conversation with ${conversationalUnit.type}`, 'info');
-
-                        // TDD: Track statistics for achievements
                         updateStatistics('conversation_started');
+                        return;
                     }
+
+                    // Then check for regular units to show info
+                    const regularUnit = getUnitAtPosition(coords.x, coords.y);
+                    if (regularUnit && !regularUnit.isDragging) {
+                        showUnitInfo(regularUnit);
+                        log(`Viewing info for ${regularUnit.type}`, 'info');
+                        return;
+                    }
+
+                    // If clicking on empty space, hide unit info
+                    hideUnitInfo();
                 }
 
                 // Reset drag state
