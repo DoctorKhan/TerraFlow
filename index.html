@@ -207,6 +207,7 @@
             },
             villageGrid: [],
             stars: [],
+            intelligentCreatures: [], // TDD: Intelligent creatures with AI behaviors
             lastUpdate: Date.now(),
         };
 
@@ -479,6 +480,9 @@
             updateUnitMovement(0.016);
             updateMovementTrails();
 
+            // TDD: Update intelligent creatures
+            updateIntelligentCreatures(0.016);
+
             gameState.villageGrid.sort((a, b) => a.y - b.y);
             gameState.villageGrid.forEach(item => {
                 const isHovered = dragState.hoveredUnit === item;
@@ -492,6 +496,9 @@
 
             // Draw movement trails
             drawMovementTrails();
+
+            // TDD: Draw intelligent creatures
+            drawIntelligentCreatures();
 
             // Ambient light effects
             drawAmbientEffects();
@@ -1593,6 +1600,804 @@
             ctx.arc(0, 0, currentSize, 0, Math.PI * 2);
             ctx.fillStyle = gradient;
             ctx.fill();
+            ctx.restore();
+        };
+
+        // --- TDD: Intelligent Creatures System ---
+
+        let creatureIdCounter = 0;
+
+        const createIntelligentCreature = (type, x, y) => {
+            const creature = {
+                id: `creature_${creatureIdCounter++}`,
+                type: type,
+                x: x,
+                y: y,
+                size: 30,
+                intelligence: 100,
+                memory: [],
+                goals: [],
+                currentGoal: null,
+                personality: {
+                    curiosity: Math.random(),
+                    sociability: Math.random(),
+                    productivity: Math.random(),
+                    exploration: Math.random()
+                },
+                state: 'idle',
+                energy: 100,
+                lastDecision: 0,
+                decisionCooldown: 3000, // 3 seconds between decisions
+                perceptionRadius: 120,
+                movementSpeed: 25,
+                targetX: x,
+                targetY: y,
+                vx: 0,
+                vy: 0,
+                animationOffset: Math.random() * Math.PI * 2,
+                relationships: new Map()
+            };
+
+            // Initialize based on creature type
+            if (type === 'cosmicSage') {
+                creature.specialAbilities = ['insight_generation', 'knowledge_sharing', 'meditation'];
+                creature.preferredActivities = ['study', 'teach', 'contemplate'];
+                creature.color = '#9333EA';
+                creature.glowColor = '#A855F7';
+            } else if (type === 'voidExplorer') {
+                creature.specialAbilities = ['void_navigation', 'resource_discovery', 'pathfinding'];
+                creature.preferredActivities = ['explore', 'scout', 'gather'];
+                creature.color = '#1F2937';
+                creature.glowColor = '#4B5563';
+            } else if (type === 'harmonyKeeper') {
+                creature.specialAbilities = ['harmony_restoration', 'conflict_resolution', 'healing'];
+                creature.preferredActivities = ['mediate', 'heal', 'organize'];
+                creature.color = '#059669';
+                creature.glowColor = '#10B981';
+            }
+
+            return creature;
+        };
+
+        const spawnIntelligentCreature = (type) => {
+            const x = Math.random() * (canvas.width - 200) + 100;
+            const y = Math.random() * (canvas.height - 200) + 100;
+            const creature = createIntelligentCreature(type, x, y);
+            gameState.intelligentCreatures.push(creature);
+            log(`A ${type} has awakened in the sanctuary!`, 'success');
+            return creature;
+        };
+
+        const perceiveEnvironment = (creature) => {
+            const perception = {
+                nearbyUnits: [],
+                nearbyResources: [],
+                nearbyCreatures: [],
+                threats: [],
+                opportunities: [],
+                environmentalFactors: {}
+            };
+
+            // Find nearby entities within perception radius
+            gameState.villageGrid.forEach(entity => {
+                const distance = Math.sqrt(
+                    Math.pow(entity.x - creature.x, 2) +
+                    Math.pow(entity.y - creature.y, 2)
+                );
+
+                if (distance <= creature.perceptionRadius) {
+                    if (entity.movable) {
+                        perception.nearbyUnits.push({
+                            entity: entity,
+                            distance: distance,
+                            relationship: 'neutral'
+                        });
+                    } else {
+                        perception.nearbyResources.push({
+                            entity: entity,
+                            distance: distance,
+                            type: entity.type
+                        });
+                    }
+                }
+            });
+
+            // Find other intelligent creatures
+            gameState.intelligentCreatures.forEach(otherCreature => {
+                if (otherCreature.id !== creature.id) {
+                    const distance = Math.sqrt(
+                        Math.pow(otherCreature.x - creature.x, 2) +
+                        Math.pow(otherCreature.y - creature.y, 2)
+                    );
+
+                    if (distance <= creature.perceptionRadius) {
+                        perception.nearbyCreatures.push({
+                            creature: otherCreature,
+                            distance: distance,
+                            relationship: creature.relationships.get(otherCreature.id) || 'neutral'
+                        });
+                    }
+                }
+            });
+
+            // Analyze environmental factors
+            perception.environmentalFactors = {
+                crowding: perception.nearbyUnits.length + perception.nearbyCreatures.length,
+                resourceAvailability: perception.nearbyResources.length,
+                harmonyLevel: gameState.harmony || 50,
+                energyLevel: gameState.energy || 0,
+                insightLevel: gameState.insight || 0
+            };
+
+            return perception;
+        };
+
+        const makeDecision = (creature, perception, currentTime) => {
+            // Don't make decisions too frequently
+            if (currentTime - creature.lastDecision < creature.decisionCooldown) {
+                return creature.currentGoal;
+            }
+
+            const possibleGoals = [];
+
+            // Generate goals based on creature type and personality
+            if (creature.type === 'cosmicSage') {
+                if (perception.nearbyUnits.length > 0 && creature.personality.sociability > 0.5) {
+                    possibleGoals.push({
+                        type: 'teach',
+                        priority: creature.personality.sociability * 10,
+                        target: perception.nearbyUnits[0].entity,
+                        duration: 8000
+                    });
+                }
+
+                if (perception.environmentalFactors.harmonyLevel < 70) {
+                    possibleGoals.push({
+                        type: 'meditate',
+                        priority: (100 - perception.environmentalFactors.harmonyLevel) / 8,
+                        target: null,
+                        duration: 10000
+                    });
+                }
+
+                if (perception.nearbyCreatures.length > 0 && creature.personality.sociability > 0.6) {
+                    possibleGoals.push({
+                        type: 'communicate',
+                        priority: creature.personality.sociability * 8,
+                        target: perception.nearbyCreatures[0].creature,
+                        duration: 5000
+                    });
+                }
+            }
+
+            if (creature.type === 'voidExplorer') {
+                if (creature.personality.exploration > 0.5) {
+                    possibleGoals.push({
+                        type: 'explore',
+                        priority: creature.personality.exploration * 9,
+                        target: {
+                            x: Math.random() * (canvas.width - 100) + 50,
+                            y: Math.random() * (canvas.height - 100) + 50
+                        },
+                        duration: 12000
+                    });
+                }
+
+                if (perception.nearbyResources.length > 0) {
+                    possibleGoals.push({
+                        type: 'investigate',
+                        priority: creature.personality.curiosity * 8,
+                        target: perception.nearbyResources[0].entity,
+                        duration: 6000
+                    });
+                }
+            }
+
+            if (creature.type === 'harmonyKeeper') {
+                if (perception.environmentalFactors.harmonyLevel < 80) {
+                    possibleGoals.push({
+                        type: 'restore_harmony',
+                        priority: (100 - perception.environmentalFactors.harmonyLevel) / 6,
+                        target: null,
+                        duration: 8000
+                    });
+                }
+
+                if (perception.nearbyUnits.length > 2) {
+                    possibleGoals.push({
+                        type: 'organize',
+                        priority: perception.nearbyUnits.length * 2,
+                        target: perception.nearbyUnits,
+                        duration: 10000
+                    });
+                }
+            }
+
+            // Add idle goal as fallback
+            possibleGoals.push({
+                type: 'idle',
+                priority: 1,
+                target: null,
+                duration: 5000
+            });
+
+            // Select highest priority goal
+            possibleGoals.sort((a, b) => b.priority - a.priority);
+            creature.currentGoal = possibleGoals[0];
+            creature.lastDecision = currentTime;
+            creature.state = creature.currentGoal.type;
+
+            return creature.currentGoal;
+        };
+
+        const updateMemory = (creature, event) => {
+            const memoryEntry = {
+                timestamp: Date.now(),
+                type: event.type,
+                location: { x: creature.x, y: creature.y },
+                data: event.data,
+                importance: event.importance || 1
+            };
+
+            creature.memory.push(memoryEntry);
+
+            // Keep memory size manageable
+            const maxMemorySize = 30;
+            if (creature.memory.length > maxMemorySize) {
+                // Remove least important old memories
+                creature.memory.sort((a, b) => {
+                    const ageA = Date.now() - a.timestamp;
+                    const ageB = Date.now() - b.timestamp;
+                    const scoreA = a.importance - (ageA / 20000);
+                    const scoreB = b.importance - (ageB / 20000);
+                    return scoreB - scoreA;
+                });
+                creature.memory = creature.memory.slice(0, maxMemorySize);
+            }
+        };
+
+        const executeBehavior = (creature, goal, deltaTime) => {
+            if (!goal) return;
+
+            switch (goal.type) {
+                case 'teach':
+                    if (goal.target && goal.target.movable) {
+                        const distance = Math.sqrt(
+                            Math.pow(goal.target.x - creature.x, 2) +
+                            Math.pow(goal.target.y - creature.y, 2)
+                        );
+
+                        if (distance > 60) {
+                            // Move closer to target
+                            creature.targetX = goal.target.x;
+                            creature.targetY = goal.target.y;
+                        } else {
+                            // Teaching effect
+                            if (!goal.target.teachingBoost || Date.now() - goal.target.teachingBoost.timestamp > 30000) {
+                                goal.target.teachingBoost = {
+                                    multiplier: 1.3,
+                                    duration: 30000,
+                                    timestamp: Date.now()
+                                };
+
+                                updateMemory(creature, {
+                                    type: 'teaching_completed',
+                                    data: { targetId: goal.target.id },
+                                    importance: 3
+                                });
+
+                                creature.intelligence = Math.min(200, creature.intelligence + 1);
+                            }
+                        }
+                    }
+                    break;
+
+                case 'meditate':
+                    // Stay still and generate harmony
+                    creature.targetX = creature.x;
+                    creature.targetY = creature.y;
+
+                    if (Math.random() < 0.02) { // 2% chance per frame
+                        gameState.harmony = Math.min(100, gameState.harmony + 0.5);
+                        gameState.insight = Math.min(gameState.insight + 0.2, gameState.insight + 0.2);
+                    }
+                    break;
+
+                case 'explore':
+                    if (goal.target) {
+                        creature.targetX = goal.target.x;
+                        creature.targetY = goal.target.y;
+
+                        const distance = Math.sqrt(
+                            Math.pow(goal.target.x - creature.x, 2) +
+                            Math.pow(goal.target.y - creature.y, 2)
+                        );
+
+                        if (distance < 20) {
+                            // Reached exploration target
+                            updateMemory(creature, {
+                                type: 'area_explored',
+                                data: { location: { x: creature.x, y: creature.y } },
+                                importance: 2
+                            });
+
+                            // Small chance to discover resources
+                            if (Math.random() < 0.1) {
+                                gameState.energy += 5;
+                                log(`${creature.type} discovered energy while exploring!`, 'info');
+                            }
+                        }
+                    }
+                    break;
+
+                case 'investigate':
+                    if (goal.target) {
+                        const distance = Math.sqrt(
+                            Math.pow(goal.target.x - creature.x, 2) +
+                            Math.pow(goal.target.y - creature.y, 2)
+                        );
+
+                        if (distance > 40) {
+                            creature.targetX = goal.target.x;
+                            creature.targetY = goal.target.y;
+                        } else {
+                            // Investigation complete
+                            updateMemory(creature, {
+                                type: 'resource_investigated',
+                                data: { resourceType: goal.target.type, location: { x: goal.target.x, y: goal.target.y } },
+                                importance: 4
+                            });
+                        }
+                    }
+                    break;
+
+                case 'restore_harmony':
+                    // Harmony restoration effect
+                    if (Math.random() < 0.03) { // 3% chance per frame
+                        gameState.harmony = Math.min(100, gameState.harmony + 1);
+
+                        // Boost nearby units
+                        gameState.villageGrid.forEach(entity => {
+                            if (entity.movable) {
+                                const distance = Math.sqrt(
+                                    Math.pow(entity.x - creature.x, 2) +
+                                    Math.pow(entity.y - creature.y, 2)
+                                );
+
+                                if (distance <= 80) {
+                                    entity.harmonyBoost = {
+                                        multiplier: 1.15,
+                                        duration: 20000,
+                                        timestamp: Date.now()
+                                    };
+                                }
+                            }
+                        });
+                    }
+                    break;
+
+                case 'communicate':
+                    if (goal.target) {
+                        const distance = Math.sqrt(
+                            Math.pow(goal.target.x - creature.x, 2) +
+                            Math.pow(goal.target.y - creature.y, 2)
+                        );
+
+                        if (distance <= 70) {
+                            // Share knowledge
+                            const recentMemories = creature.memory.slice(-2);
+                            recentMemories.forEach(memory => {
+                                if (!goal.target.memory.some(m =>
+                                    m.type === memory.type &&
+                                    Math.abs(m.timestamp - memory.timestamp) < 2000
+                                )) {
+                                    goal.target.memory.push({
+                                        ...memory,
+                                        source: creature.id,
+                                        shared: true
+                                    });
+                                }
+                            });
+
+                            // Improve relationship
+                            creature.relationships.set(goal.target.id, 'friendly');
+                            goal.target.relationships.set(creature.id, 'friendly');
+
+                            // Both gain intelligence
+                            creature.intelligence = Math.min(200, creature.intelligence + 0.5);
+                            goal.target.intelligence = Math.min(200, goal.target.intelligence + 0.5);
+                        }
+                    }
+                    break;
+
+                case 'idle':
+                default:
+                    // Gentle wandering
+                    const wanderRadius = 40;
+                    creature.targetX = creature.x + (Math.random() - 0.5) * wanderRadius;
+                    creature.targetY = creature.y + (Math.random() - 0.5) * wanderRadius;
+
+                    // Keep within bounds
+                    creature.targetX = Math.max(50, Math.min(canvas.width - 50, creature.targetX));
+                    creature.targetY = Math.max(50, Math.min(canvas.height - 50, creature.targetY));
+                    break;
+            }
+        };
+
+        const updateIntelligentCreatures = (deltaTime) => {
+            const currentTime = Date.now();
+
+            gameState.intelligentCreatures.forEach(creature => {
+                // Perception and decision making
+                const perception = perceiveEnvironment(creature);
+                const goal = makeDecision(creature, perception, currentTime);
+
+                // Execute current behavior
+                executeBehavior(creature, goal, deltaTime);
+
+                // Update movement
+                const dx = creature.targetX - creature.x;
+                const dy = creature.targetY - creature.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > 2) {
+                    const speed = creature.movementSpeed;
+                    const moveDistance = speed * deltaTime;
+                    const ratio = Math.min(moveDistance / distance, 1);
+
+                    creature.x += dx * ratio;
+                    creature.y += dy * ratio;
+                    creature.vx = dx * ratio / deltaTime;
+                    creature.vy = dy * ratio / deltaTime;
+                } else {
+                    creature.vx = 0;
+                    creature.vy = 0;
+                }
+
+                // Update goal duration
+                if (goal && goal.startTime) {
+                    if (currentTime - goal.startTime > goal.duration) {
+                        creature.currentGoal = null;
+                        creature.state = 'idle';
+                    }
+                } else if (goal) {
+                    goal.startTime = currentTime;
+                }
+            });
+        };
+
+        const drawIntelligentCreatures = () => {
+            gameState.intelligentCreatures.forEach(creature => {
+                drawIntelligentCreature(creature);
+            });
+        };
+
+        const drawIntelligentCreature = (creature) => {
+            ctx.save();
+            ctx.translate(creature.x, creature.y);
+
+            const pulse = 1 + Math.sin(animationTime * 1.5 + creature.animationOffset) * 0.1;
+            const currentSize = creature.size * pulse;
+
+            // Intelligence aura - larger and more complex than regular units
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.shadowColor = creature.glowColor;
+            ctx.shadowBlur = 35;
+
+            const auraGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 2.5);
+            const r = parseInt(creature.glowColor.slice(1,3), 16);
+            const g = parseInt(creature.glowColor.slice(3,5), 16);
+            const b = parseInt(creature.glowColor.slice(5,7), 16);
+
+            auraGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.3)`);
+            auraGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.15)`);
+            auraGradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = auraGradient;
+            ctx.fill();
+            ctx.restore();
+
+            // Main creature body - distinctive shape based on type
+            if (creature.type === 'cosmicSage') {
+                drawCosmicSage(creature, currentSize);
+            } else if (creature.type === 'voidExplorer') {
+                drawVoidExplorer(creature, currentSize);
+            } else if (creature.type === 'harmonyKeeper') {
+                drawHarmonyKeeper(creature, currentSize);
+            }
+
+            // Intelligence indicator - neural network pattern
+            if (creature.intelligence > 100) {
+                drawIntelligenceIndicator(creature, currentSize);
+            }
+
+            // State indicator
+            drawStateIndicator(creature, currentSize);
+
+            ctx.restore();
+        };
+
+        const drawCosmicSage = (creature, size) => {
+            // Multi-layered mandala design
+            ctx.save();
+            ctx.shadowColor = creature.glowColor;
+            ctx.shadowBlur = 25;
+
+            // Outer ring with rotating symbols
+            const rotation = animationTime * 0.3;
+            for (let i = 0; i < 8; i++) {
+                const angle = (i * Math.PI * 2 / 8) + rotation;
+                const symbolX = Math.cos(angle) * size * 1.5;
+                const symbolY = Math.sin(angle) * size * 1.5;
+
+                ctx.save();
+                ctx.translate(symbolX, symbolY);
+                ctx.rotate(angle + Math.PI / 2);
+                ctx.fillStyle = creature.glowColor;
+                ctx.font = '12px serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('◊', 0, 4);
+                ctx.restore();
+            }
+
+            // Main body - complex geometric pattern
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            const r = parseInt(creature.color.slice(1,3), 16);
+            const g = parseInt(creature.color.slice(3,5), 16);
+            const b = parseInt(creature.color.slice(5,7), 16);
+
+            gradient.addColorStop(0, `rgba(${Math.min(255, r + 50)}, ${Math.min(255, g + 50)}, ${Math.min(255, b + 50)}, 1.0)`);
+            gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, 0.9)`);
+            gradient.addColorStop(1, `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 0.7)`);
+
+            // Draw complex star pattern
+            ctx.beginPath();
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * Math.PI * 2) / 12;
+                const radius = i % 2 === 0 ? size : size * 0.6;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Inner wisdom eye
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = creature.color;
+            ctx.fill();
+
+            ctx.restore();
+        };
+
+        const drawVoidExplorer = (creature, size) => {
+            // Shifting, ethereal form
+            ctx.save();
+            ctx.shadowColor = creature.glowColor;
+            ctx.shadowBlur = 20;
+
+            const shift = Math.sin(animationTime * 2) * 0.2;
+
+            // Main body - irregular, shifting shape
+            ctx.beginPath();
+            for (let i = 0; i <= 16; i++) {
+                const angle = (i * Math.PI * 2) / 16;
+                const variation = 1 + Math.sin(angle * 3 + animationTime * 1.5) * shift;
+                const radius = size * variation;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            const r = parseInt(creature.color.slice(1,3), 16);
+            const g = parseInt(creature.color.slice(3,5), 16);
+            const b = parseInt(creature.color.slice(5,7), 16);
+
+            gradient.addColorStop(0, `rgba(${r + 40}, ${g + 40}, ${b + 40}, 0.8)`);
+            gradient.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.6)`);
+            gradient.addColorStop(1, `rgba(${r - 20}, ${g - 20}, ${b - 20}, 0.3)`);
+
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Void tendrils
+            for (let i = 0; i < 4; i++) {
+                const tendrilAngle = (i * Math.PI * 2 / 4) + animationTime * 0.5;
+                const tendrilLength = size * (1.2 + Math.sin(animationTime * 2 + i) * 0.3);
+
+                ctx.save();
+                ctx.rotate(tendrilAngle);
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.6)`;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+
+                ctx.beginPath();
+                ctx.moveTo(size * 0.7, 0);
+
+                const segments = 5;
+                for (let j = 1; j <= segments; j++) {
+                    const t = j / segments;
+                    const segmentX = size * 0.7 + tendrilLength * t;
+                    const wave = Math.sin(t * Math.PI * 2 + animationTime * 3 + i) * 8;
+                    const segmentY = wave;
+
+                    if (j === 1) {
+                        ctx.lineTo(segmentX, segmentY);
+                    } else {
+                        const prevT = (j - 1) / segments;
+                        const prevX = size * 0.7 + tendrilLength * prevT;
+                        const prevWave = Math.sin(prevT * Math.PI * 2 + animationTime * 3 + i) * 8;
+
+                        const cp1x = prevX + (segmentX - prevX) * 0.5;
+                        const cp1y = prevWave;
+                        const cp2x = segmentX - (segmentX - prevX) * 0.5;
+                        const cp2y = segmentY;
+
+                        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, segmentX, segmentY);
+                    }
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            ctx.restore();
+        };
+
+        const drawHarmonyKeeper = (creature, size) => {
+            // Flowing, organic form with healing energy
+            ctx.save();
+            ctx.shadowColor = creature.glowColor;
+            ctx.shadowBlur = 30;
+
+            // Main body - organic, flowing shape
+            const flow = animationTime * 1.2;
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            const r = parseInt(creature.color.slice(1,3), 16);
+            const g = parseInt(creature.color.slice(3,5), 16);
+            const b = parseInt(creature.color.slice(5,7), 16);
+
+            gradient.addColorStop(0, `rgba(${Math.min(255, r + 60)}, ${Math.min(255, g + 60)}, ${Math.min(255, b + 60)}, 1.0)`);
+            gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.9)`);
+            gradient.addColorStop(1, `rgba(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)}, 0.6)`);
+
+            // Draw flowing petals
+            for (let i = 0; i < 6; i++) {
+                const petalAngle = (i * Math.PI * 2 / 6) + flow * 0.2;
+                const petalSize = size * (0.8 + Math.sin(flow + i) * 0.2);
+
+                ctx.save();
+                ctx.rotate(petalAngle);
+                ctx.beginPath();
+                ctx.ellipse(petalSize * 0.5, 0, petalSize * 0.6, petalSize * 0.3, 0, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Central harmony core
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, 0.9)`;
+            ctx.fill();
+
+            // Healing energy waves
+            for (let i = 0; i < 3; i++) {
+                const waveRadius = size * (1.5 + i * 0.5) + Math.sin(flow * 2 - i) * 10;
+                const waveAlpha = 0.3 - i * 0.1;
+
+                ctx.beginPath();
+                ctx.arc(0, 0, waveRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${waveAlpha})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        };
+
+        const drawIntelligenceIndicator = (creature, size) => {
+            // Neural network pattern for high intelligence
+            if (creature.intelligence <= 100) return;
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            ctx.strokeStyle = `rgba(255, 255, 255, 0.4)`;
+            ctx.lineWidth = 1;
+
+            const nodes = 6;
+            const nodePositions = [];
+
+            // Create node positions
+            for (let i = 0; i < nodes; i++) {
+                const angle = (i * Math.PI * 2) / nodes;
+                const radius = size * 0.8;
+                nodePositions.push({
+                    x: Math.cos(angle) * radius,
+                    y: Math.sin(angle) * radius
+                });
+            }
+
+            // Draw connections
+            for (let i = 0; i < nodes; i++) {
+                for (let j = i + 1; j < nodes; j++) {
+                    if (Math.random() < 0.6) { // 60% chance of connection
+                        ctx.beginPath();
+                        ctx.moveTo(nodePositions[i].x, nodePositions[i].y);
+                        ctx.lineTo(nodePositions[j].x, nodePositions[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw nodes
+            nodePositions.forEach(pos => {
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fill();
+            });
+
+            ctx.restore();
+        };
+
+        const drawStateIndicator = (creature, size) => {
+            // Small indicator showing current state
+            ctx.save();
+            ctx.translate(0, -size * 1.3);
+
+            let stateColor = '#FFFFFF';
+            let stateSymbol = '●';
+
+            switch (creature.state) {
+                case 'teach':
+                    stateColor = '#F59E0B';
+                    stateSymbol = '📚';
+                    break;
+                case 'meditate':
+                    stateColor = '#8B5CF6';
+                    stateSymbol = '🧘';
+                    break;
+                case 'explore':
+                    stateColor = '#10B981';
+                    stateSymbol = '🔍';
+                    break;
+                case 'investigate':
+                    stateColor = '#06B6D4';
+                    stateSymbol = '🔬';
+                    break;
+                case 'restore_harmony':
+                    stateColor = '#059669';
+                    stateSymbol = '✨';
+                    break;
+                case 'communicate':
+                    stateColor = '#EC4899';
+                    stateSymbol = '💬';
+                    break;
+            }
+
+            if (creature.state !== 'idle') {
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = stateColor;
+                ctx.shadowColor = stateColor;
+                ctx.shadowBlur = 5;
+                ctx.fillText(stateSymbol, 0, 5);
+            }
+
             ctx.restore();
         };
 
