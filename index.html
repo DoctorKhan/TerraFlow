@@ -152,7 +152,7 @@
         // --- Game Config ---
         const unitsConfig = {
             dreamers: { name: "Dreamer", description: "Generates Insight.", baseInsight: 0.1, costResource: 'energy' },
-            weavers: { name: "Weaver", description: "Generates Energy.", baseEnergy: 0.1, costResource: 'insight' },
+            weavers: { name: "Weaver", description: "Generates Energy.", baseEnergy: 1, costResource: 'insight' },
         };
 
         const nodesConfig = {
@@ -185,8 +185,8 @@
             statsBar.innerHTML = `
                 <div class="stat-card p-3 rounded-lg" title="Energy. Used to create Dreamers."><p class="text-sm text-indigo-300">⚡ Energy</p><p class="text-xl font-bold text-yellow-300">${formatNumber(gameState.energy)}</p><p class="text-xs text-yellow-400">${formatNumber(gameState.energyPerSecond)}/s</p></div>
                 <div class="stat-card p-3 rounded-lg" title="Insight. Used to create Weavers."><p class="text-sm text-indigo-300">🔮 Insight</p><p class="text-xl font-bold text-purple-300">${formatNumber(gameState.insight)}</p><p class="text-xs text-purple-400">${formatNumber(gameState.insightPerSecond)}/s</p></div>
-                <div class="stat-card p-3 rounded-lg" title="Dreamers generate Insight."><p class="text-sm text-indigo-300">몽 Dreamers</p><p class="text-xl font-bold">${formatNumber(gameState.units.dreamers)}</p></div>
-                <div class="stat-card p-3 rounded-lg" title="Weavers generate Energy."><p class="text-sm text-indigo-300">🕸️ Weavers</p><p class="text-xl font-bold">${formatNumber(gameState.units.weavers)}</p></div>
+                <div class="stat-card p-3 rounded-lg" title="Dreamers generate Insight."><p class="text-sm text-indigo-300">몽 Dreamer Units</p><p class="text-xl font-bold">${formatNumber(gameState.units.dreamers)}</p></div>
+                <div class="stat-card p-3 rounded-lg" title="Weavers generate Energy."><p class="text-sm text-indigo-300">🕸️ Weaver Units</p><p class="text-xl font-bold">${formatNumber(gameState.units.weavers)}</p></div>
                 <div class="stat-card p-3 rounded-lg" title="Ecological balance."><p class="text-sm text-indigo-300">🌿 Harmony</p><p class="text-xl font-bold text-green-400">${gameState.harmony.toFixed(1)}%</p></div>
             `;
         };
