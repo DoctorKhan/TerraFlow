@@ -456,8 +456,8 @@ describe('Intelligent Creatures Tests', () => {
             };
 
             const explorer = {
-                x: 50,
-                y: 50,
+                x: 120, // Start closer to entities
+                y: 120,
                 movementSpeed: 30
             };
 
@@ -465,8 +465,8 @@ describe('Intelligent Creatures Tests', () => {
 
             const result = executeExplorationBehavior(explorer, targetLocation, mockGameState);
 
-            expect(explorer.x).toBeGreaterThan(50);
-            expect(explorer.y).toBeGreaterThan(50);
+            expect(explorer.x).toBeGreaterThan(120);
+            expect(explorer.y).toBeGreaterThan(120);
             expect(result.discoveries.length).toBeGreaterThan(0);
             expect(result.success).toBe(true);
         });
