@@ -1101,6 +1101,7 @@
             });
         };
 
+        // TDD: Distinct visual designs for each unit type
         const drawMovableUnit = (unit, isHovered, isDragged) => {
             ctx.save();
 
@@ -1122,85 +1123,476 @@
             ctx.translate(unit.x, unit.y);
             ctx.scale(scale, scale);
 
-            // Get unit color and create variations
-            let baseColor, glowColor;
+            // Draw unit based on type with distinct designs
             if (unit.type === 'dreamer') {
-                baseColor = '#8B5CF6';
-                glowColor = '#A78BFA';
+                drawDreamerUnit(unit, glowIntensity);
             } else if (unit.type === 'weaver') {
-                baseColor = '#10B981';
-                glowColor = '#34D399';
+                drawWeaverUnit(unit, glowIntensity);
             } else if (unit.type === 'stellarNomads') {
-                baseColor = '#F59E0B';
-                glowColor = '#FBBF24';
+                drawStellarNomadUnit(unit, glowIntensity);
+            } else if (unit.type === 'voidWhisperers') {
+                drawVoidWhispererUnit(unit, glowIntensity);
+            } else if (unit.type === 'crystalBeings') {
+                drawCrystalBeingUnit(unit, glowIntensity);
+            } else if (unit.type === 'plasmaDancers') {
+                drawPlasmaDancerUnit(unit, glowIntensity);
             } else {
-                baseColor = '#F59E0B';
-                glowColor = '#FBBF24';
+                // Default fallback
+                drawDefaultUnit(unit, glowIntensity);
             }
 
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        };
+
+        const drawDreamerUnit = (unit, glowIntensity) => {
             const pulse = 1 + Math.sin(animationTime * 2 + (unit.animationOffset || 0)) * 0.15;
             const currentSize = unit.size * pulse;
+            const floatOffset = Math.sin(animationTime * 0.5 + (unit.animationOffset || 0)) * 3;
 
-            // Layer 1: Outer glow (same quality for all units)
+            ctx.save();
+            ctx.translate(0, floatOffset);
+
+            // Outer aura
             ctx.save();
             ctx.globalCompositeOperation = 'screen';
-            ctx.shadowColor = glowColor;
-            ctx.shadowBlur = 25 * glowIntensity;
+            ctx.shadowColor = '#A78BFA';
+            ctx.shadowBlur = 30 * glowIntensity;
             ctx.beginPath();
-            ctx.arc(0, 0, currentSize * 1.8, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${parseInt(glowColor.slice(1,3), 16)}, ${parseInt(glowColor.slice(3,5), 16)}, ${parseInt(glowColor.slice(5,7), 16)}, 0.2)`;
+            ctx.arc(0, 0, currentSize * 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(167, 139, 250, 0.15)';
             ctx.fill();
             ctx.restore();
 
-            // Layer 2: Main body with radial gradient
+            // Main orb with gradient
             const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize);
-            const r = parseInt(baseColor.slice(1,3), 16);
-            const g = parseInt(baseColor.slice(3,5), 16);
-            const b = parseInt(baseColor.slice(5,7), 16);
+            gradient.addColorStop(0, 'rgba(196, 181, 253, 1.0)');
+            gradient.addColorStop(0.6, 'rgba(139, 92, 246, 0.9)');
+            gradient.addColorStop(1, 'rgba(109, 40, 217, 0.7)');
 
-            gradient.addColorStop(0, `rgba(${Math.min(255, r + 40)}, ${Math.min(255, g + 40)}, ${Math.min(255, b + 40)}, 1.0)`);
-            gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, 0.9)`);
-            gradient.addColorStop(1, `rgba(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)}, 0.7)`);
-
-            ctx.shadowColor = glowColor;
-            ctx.shadowBlur = 15 * glowIntensity;
+            ctx.shadowColor = '#A78BFA';
+            ctx.shadowBlur = 20 * glowIntensity;
             ctx.beginPath();
             ctx.arc(0, 0, currentSize, 0, Math.PI * 2);
             ctx.fillStyle = gradient;
             ctx.fill();
 
-            // Layer 3: Inner highlight
+            // Inner core
             ctx.save();
             ctx.globalCompositeOperation = 'overlay';
-            const highlightGradient = ctx.createRadialGradient(-currentSize * 0.3, -currentSize * 0.3, 0, 0, 0, currentSize * 0.8);
-            highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
-            highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.beginPath();
-            ctx.arc(0, 0, currentSize * 0.7, 0, Math.PI * 2);
-            ctx.fillStyle = highlightGradient;
+            ctx.arc(-currentSize * 0.2, -currentSize * 0.2, currentSize * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
             ctx.fill();
             ctx.restore();
 
-            // Layer 4: Sparkle effects for all units
-            if (Math.random() < 0.05) {
-                for (let i = 0; i < 3; i++) {
-                    const sparkleX = (Math.random() - 0.5) * currentSize * 1.5;
-                    const sparkleY = (Math.random() - 0.5) * currentSize * 1.5;
-                    const sparkleSize = Math.random() * 2 + 1;
+            // Energy wisps
+            for (let i = 0; i < 3; i++) {
+                const angle = animationTime * 0.3 + (i * Math.PI * 2 / 3);
+                const radius = currentSize * 1.5;
+                const wispX = Math.cos(angle) * radius;
+                const wispY = Math.sin(angle) * radius;
 
-                    ctx.save();
-                    ctx.globalCompositeOperation = 'screen';
-                    ctx.shadowColor = glowColor;
-                    ctx.shadowBlur = 8;
-                    ctx.beginPath();
-                    ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.fill();
-                    ctx.restore();
-                }
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.strokeStyle = 'rgba(196, 181, 253, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = '#A78BFA';
+                ctx.shadowBlur = 10;
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                const cp1x = wispX * 0.3;
+                const cp1y = wispY * 0.3 + Math.sin(animationTime * 2 + i) * 10;
+                const cp2x = wispX * 0.7;
+                const cp2y = wispY * 0.7 + Math.cos(animationTime * 2 + i) * 8;
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, wispX, wispY);
+                ctx.stroke();
+                ctx.restore();
             }
 
-            ctx.shadowBlur = 0;
+            ctx.restore();
+        };
+
+        const drawWeaverUnit = (unit, glowIntensity) => {
+            const pulse = 1 + Math.sin(animationTime * 1.5 + (unit.animationOffset || 0)) * 0.1;
+            const currentSize = unit.size * pulse;
+
+            // Hexagonal crystal base
+            ctx.save();
+            ctx.shadowColor = '#34D399';
+            ctx.shadowBlur = 20 * glowIntensity;
+
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize);
+            gradient.addColorStop(0, 'rgba(110, 231, 183, 1.0)');
+            gradient.addColorStop(0.6, 'rgba(16, 185, 129, 0.9)');
+            gradient.addColorStop(1, 'rgba(5, 150, 105, 0.7)');
+
+            // Draw hexagon
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI * 2) / 6;
+                const x = Math.cos(angle) * currentSize;
+                const y = Math.sin(angle) * currentSize;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Hexagon outline
+            ctx.strokeStyle = 'rgba(110, 231, 183, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+
+            // Energy threads
+            for (let i = 0; i < 6; i++) {
+                const angle1 = (i * Math.PI * 2) / 6;
+                const angle2 = ((i + 2) * Math.PI * 2) / 6;
+                const weaveOffset = Math.sin(animationTime * 1.0 + i) * 0.3;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.strokeStyle = `rgba(110, 231, 183, ${0.4 + weaveOffset})`;
+                ctx.lineWidth = 1.5;
+                ctx.shadowColor = '#34D399';
+                ctx.shadowBlur = 8;
+
+                const x1 = Math.cos(angle1) * currentSize * 0.8;
+                const y1 = Math.sin(angle1) * currentSize * 0.8;
+                const x2 = Math.cos(angle2) * currentSize * 0.8;
+                const y2 = Math.sin(angle2) * currentSize * 0.8;
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Central gem
+            ctx.save();
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.beginPath();
+            for (let i = 0; i < 4; i++) {
+                const angle = (i * Math.PI * 2) / 4 + Math.PI / 4;
+                const x = Math.cos(angle) * currentSize * 0.3;
+                const y = Math.sin(angle) * currentSize * 0.3;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.fill();
+            ctx.restore();
+        };
+
+        const drawStellarNomadUnit = (unit, glowIntensity) => {
+            const pulse = 1 + Math.sin(animationTime * 3 + (unit.animationOffset || 0)) * 0.2;
+            const currentSize = unit.size * pulse;
+            const rotation = animationTime * 0.5;
+
+            ctx.save();
+            ctx.rotate(rotation);
+
+            // Stellar corona (8-pointed star)
+            ctx.save();
+            ctx.shadowColor = '#FBBF24';
+            ctx.shadowBlur = 25 * glowIntensity;
+
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 1.5);
+            gradient.addColorStop(0, 'rgba(252, 211, 77, 1.0)');
+            gradient.addColorStop(0.6, 'rgba(245, 158, 11, 0.8)');
+            gradient.addColorStop(1, 'rgba(217, 119, 6, 0.4)');
+
+            // Draw 8-pointed star
+            ctx.beginPath();
+            for (let i = 0; i < 16; i++) {
+                const angle = (i * Math.PI * 2) / 16;
+                const radius = i % 2 === 0 ? currentSize * 1.5 : currentSize * 0.8;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.restore();
+
+            // Plasma core
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 0.8);
+            coreGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            coreGradient.addColorStop(0.5, 'rgba(252, 211, 77, 0.7)');
+            coreGradient.addColorStop(1, 'rgba(245, 158, 11, 0.3)');
+
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 0.8, 0, Math.PI * 2);
+            ctx.fillStyle = coreGradient;
+            ctx.fill();
+            ctx.restore();
+
+            // Solar flares
+            for (let i = 0; i < 4; i++) {
+                const flareAngle = (i * Math.PI * 2) / 4 + animationTime * 0.2;
+                const flareIntensity = 0.5 + Math.sin(animationTime * 4 + i) * 0.3;
+                const flareLength = currentSize * (1.5 + flareIntensity * 0.5);
+
+                ctx.save();
+                ctx.rotate(flareAngle);
+                ctx.globalCompositeOperation = 'screen';
+                ctx.strokeStyle = `rgba(252, 211, 77, ${flareIntensity})`;
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#FBBF24';
+                ctx.shadowBlur = 15;
+
+                // Draw flame-like wisp
+                ctx.beginPath();
+                ctx.moveTo(currentSize, 0);
+                const cp1x = currentSize + flareLength * 0.3;
+                const cp1y = Math.sin(animationTime * 3 + i) * 8;
+                const cp2x = currentSize + flareLength * 0.7;
+                const cp2y = Math.cos(animationTime * 2 + i) * 12;
+                const endX = currentSize + flareLength;
+                const endY = Math.sin(animationTime * 4 + i) * 5;
+
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            ctx.restore();
+        };
+
+        const drawVoidWhispererUnit = (unit, glowIntensity) => {
+            const pulse = 1 + Math.sin(animationTime * 1.5 + (unit.animationOffset || 0)) * 0.15;
+            const currentSize = unit.size * pulse;
+            const warpIntensity = Math.sin(animationTime * 1.5) * 0.15;
+
+            // Void distortion effect
+            ctx.save();
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.shadowColor = '#581C87';
+            ctx.shadowBlur = 30 * glowIntensity;
+
+            // Irregular distorted circle
+            ctx.beginPath();
+            for (let i = 0; i <= 32; i++) {
+                const angle = (i * Math.PI * 2) / 32;
+                const distortion = 1 + Math.sin(angle * 3 + animationTime * 2) * warpIntensity;
+                const radius = currentSize * distortion;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+
+            const voidGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize);
+            voidGradient.addColorStop(0, 'rgba(76, 29, 149, 0.9)');
+            voidGradient.addColorStop(0.6, 'rgba(88, 28, 135, 0.7)');
+            voidGradient.addColorStop(1, 'rgba(107, 33, 168, 0.3)');
+
+            ctx.fillStyle = voidGradient;
+            ctx.fill();
+            ctx.restore();
+
+            // Shadow tendrils
+            for (let i = 0; i < 5; i++) {
+                const baseAngle = (i * Math.PI * 2) / 5;
+                const writheOffset = Math.sin(animationTime * 2 + i) * 0.5;
+                const tentacleLength = currentSize * (1.5 + writheOffset);
+
+                ctx.save();
+                ctx.rotate(baseAngle);
+                ctx.globalCompositeOperation = 'multiply';
+                ctx.strokeStyle = `rgba(76, 29, 149, ${0.6 + writheOffset * 0.3})`;
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#581C87';
+                ctx.shadowBlur = 12;
+
+                // Draw writhing tentacle
+                ctx.beginPath();
+                ctx.moveTo(currentSize * 0.8, 0);
+
+                const segments = 6;
+                for (let j = 1; j <= segments; j++) {
+                    const t = j / segments;
+                    const segmentX = currentSize * 0.8 + tentacleLength * t;
+                    const writhe = Math.sin(t * Math.PI * 2 + animationTime * 2 + i) * 8;
+                    const segmentY = writhe;
+
+                    if (j === 1) {
+                        ctx.lineTo(segmentX, segmentY);
+                    } else {
+                        const prevT = (j - 1) / segments;
+                        const prevX = currentSize * 0.8 + tentacleLength * prevT;
+                        const prevWrithe = Math.sin(prevT * Math.PI * 2 + animationTime * 2 + i) * 8;
+
+                        const cp1x = prevX + (segmentX - prevX) * 0.5;
+                        const cp1y = prevWrithe;
+                        const cp2x = segmentX - (segmentX - prevX) * 0.5;
+                        const cp2y = segmentY;
+
+                        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, segmentX, segmentY);
+                    }
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Dark absorption core
+            ctx.save();
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize * 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fill();
+            ctx.restore();
+        };
+
+        const drawCrystalBeingUnit = (unit, glowIntensity) => {
+            const pulse = 1 + Math.sin(animationTime * 2.5 + (unit.animationOffset || 0)) * 0.12;
+            const currentSize = unit.size * pulse;
+            const refraction = animationTime * 3;
+
+            // Crystal facets
+            ctx.save();
+            ctx.shadowColor = '#06B6D4';
+            ctx.shadowBlur = 20 * glowIntensity;
+
+            // Main crystal body (octagon)
+            const facets = 8;
+            for (let layer = 0; layer < 3; layer++) {
+                const layerSize = currentSize * (1 - layer * 0.2);
+                const layerAlpha = 0.8 - layer * 0.2;
+
+                ctx.save();
+                ctx.rotate(refraction + layer * 0.1);
+
+                const crystalGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, layerSize);
+                crystalGradient.addColorStop(0, `rgba(165, 243, 252, ${layerAlpha})`);
+                crystalGradient.addColorStop(0.6, `rgba(6, 182, 212, ${layerAlpha * 0.8})`);
+                crystalGradient.addColorStop(1, `rgba(8, 145, 178, ${layerAlpha * 0.6})`);
+
+                ctx.beginPath();
+                for (let i = 0; i < facets; i++) {
+                    const angle = (i * Math.PI * 2) / facets;
+                    const x = Math.cos(angle) * layerSize;
+                    const y = Math.sin(angle) * layerSize;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fillStyle = crystalGradient;
+                ctx.fill();
+
+                // Facet edges
+                ctx.strokeStyle = `rgba(165, 243, 252, ${layerAlpha * 0.6})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // Refraction highlights
+            for (let i = 0; i < 3; i++) {
+                const highlightAngle = refraction + (i * Math.PI * 2) / 3;
+                const highlightX = Math.cos(highlightAngle) * currentSize * 0.6;
+                const highlightY = Math.sin(highlightAngle) * currentSize * 0.6;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.beginPath();
+                ctx.arc(highlightX, highlightY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.shadowColor = '#06B6D4';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.restore();
+            }
+        };
+
+        const drawPlasmaDancerUnit = (unit, glowIntensity) => {
+            const pulse = 1 + Math.sin(animationTime * 4 + (unit.animationOffset || 0)) * 0.25;
+            const currentSize = unit.size * pulse;
+            const flow = animationTime * 2;
+
+            // Plasma wisps flowing around center
+            for (let i = 0; i < 6; i++) {
+                const wispAngle = flow + (i * Math.PI * 2) / 6;
+                const wispRadius = currentSize * (1.2 + Math.sin(flow + i) * 0.3);
+                const wispX = Math.cos(wispAngle) * wispRadius;
+                const wispY = Math.sin(wispAngle) * wispRadius;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.strokeStyle = `rgba(236, 72, 153, ${0.6 + Math.sin(flow * 2 + i) * 0.3})`;
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#EC4899';
+                ctx.shadowBlur = 15;
+
+                // Draw flowing wisp
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                const cp1x = wispX * 0.3;
+                const cp1y = wispY * 0.3 + Math.sin(flow * 3 + i) * 15;
+                const cp2x = wispX * 0.7;
+                const cp2y = wispY * 0.7 + Math.cos(flow * 2 + i) * 10;
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, wispX, wispY);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Central plasma core
+            ctx.save();
+            ctx.shadowColor = '#EC4899';
+            ctx.shadowBlur = 25 * glowIntensity;
+
+            const plasmaGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 0.8);
+            plasmaGradient.addColorStop(0, 'rgba(251, 207, 232, 1.0)');
+            plasmaGradient.addColorStop(0.5, 'rgba(236, 72, 153, 0.8)');
+            plasmaGradient.addColorStop(1, 'rgba(190, 24, 93, 0.4)');
+
+            // Irregular plasma shape
+            ctx.beginPath();
+            for (let i = 0; i <= 16; i++) {
+                const angle = (i * Math.PI * 2) / 16;
+                const variation = 1 + Math.sin(angle * 4 + flow) * 0.2;
+                const radius = currentSize * 0.8 * variation;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = plasmaGradient;
+            ctx.fill();
+            ctx.restore();
+        };
+
+        const drawDefaultUnit = (unit, glowIntensity) => {
+            // Fallback design for unknown unit types
+            const pulse = 1 + Math.sin(animationTime * 2 + (unit.animationOffset || 0)) * 0.15;
+            const currentSize = unit.size * pulse;
+
+            ctx.save();
+            ctx.shadowColor = '#6B7280';
+            ctx.shadowBlur = 15 * glowIntensity;
+
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize);
+            gradient.addColorStop(0, 'rgba(156, 163, 175, 1.0)');
+            gradient.addColorStop(0.6, 'rgba(107, 114, 128, 0.9)');
+            gradient.addColorStop(1, 'rgba(75, 85, 99, 0.7)');
+
+            ctx.beginPath();
+            ctx.arc(0, 0, currentSize, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
             ctx.restore();
         };
 
