@@ -34,7 +34,7 @@
         canvas {
             border-radius: 0.75rem;
         }
-        .gemini-btn.loading, .gemini-btn:disabled, button:disabled {
+        .grok-btn.loading, .grok-btn:disabled, button:disabled {
             cursor: not-allowed;
             background-color: #4a5568;
             opacity: 0.7;
@@ -73,10 +73,10 @@
                 </div>
             </div>
              <div class="mt-6 space-y-3">
-                 <button id="advisor-btn" class="gemini-btn w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
+                 <button id="advisor-btn" class="grok-btn w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
                     📜 Ask Advisor
                 </button>
-                 <button id="seasonal-vision-btn" class="gemini-btn w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
+                 <button id="seasonal-vision-btn" class="grok-btn w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">
                     ✨ Get Resonant Vision
                 </button>
             </div>
@@ -170,7 +170,7 @@
             return (num / 1e9).toFixed(2) + 'B';
         };
         const log = (message, type = 'info') => {
-            const colors = { info: 'text-indigo-300', success: 'text-teal-300', error: 'text-red-400', warning: 'text-amber-300', gemini: 'text-purple-300' };
+            const colors = { info: 'text-indigo-300', success: 'text-teal-300', error: 'text-red-400', warning: 'text-amber-300', grok: 'text-purple-300' };
             const p = document.createElement('p');
             p.innerHTML = `[INFO] ${message}`;
             p.className = `${colors[type]} log-entry`;
@@ -810,14 +810,21 @@
             }
         }
         async function getSeasonalVision() {
-            const prompt = `You are a storyteller for a game called Resonant Sanctuary. Write a short, poetic, 2-3 sentence story about the sanctuary. Current state: Energy production is ${gameState.energyPerSecond.toFixed(1)}/s, Insight production is ${gameState.insightPerSecond.toFixed(1)}/s. The sanctuary has ${gameState.units.dreamers} dreamers and ${gameState.units.weavers} weavers. Keep it mystical.`;
-            const story = await callGemini(prompt, seasonalVisionBtn);
-            log(`✨ ${story}`, 'gemini');
+            const systemPrompt = "You are a mystical storyteller for Resonant Sanctuary: The Weaver, a cosmic incremental game. Create poetic, ethereal visions about the sanctuary's future or cosmic events. Use mystical language and keep responses to 2-3 sentences.";
+
+            const prompt = `Current sanctuary state: Energy production ${gameState.energyPerSecond.toFixed(1)}/s, Insight production ${gameState.insightPerSecond.toFixed(1)}/s. The sanctuary houses ${gameState.units.dreamers} dreamers and ${gameState.units.weavers} weavers, with ${gameState.harmony.toFixed(1)}% harmony. Provide a mystical seasonal vision or cosmic forecast.`;
+
+            const story = await callGrok(prompt, seasonalVisionBtn, systemPrompt);
+            log(`✨ ${story}`, 'grok');
         }
+
         async function getAdvisorInsight() {
-            const prompt = `You are an AI advisor in Resonant Sanctuary. The player needs help. Based on these stats (Energy: ${formatNumber(gameState.energy)}, Insight: ${formatNumber(gameState.insight)}, Energy/s: ${formatNumber(gameState.energyPerSecond)}, Insight/s: ${formatNumber(gameState.insightPerSecond)}), give a single, actionable piece of advice. Start with "The sanctuary whispers..." and keep it under 30 words.`;
-            const advice = await callGemini(prompt, advisorBtn);
-            log(`📜 ${advice}`, 'gemini');
+            const systemPrompt = "You are the Cosmic Advisor for Resonant Sanctuary: The Weaver. Provide brief, mystical advice using cosmic language. Always start responses with 'The sanctuary whispers...' and keep under 30 words. Focus on actionable game advice.";
+
+            const prompt = `Current stats: Energy: ${formatNumber(gameState.energy)}, Insight: ${formatNumber(gameState.insight)}, Energy/s: ${formatNumber(gameState.energyPerSecond)}, Insight/s: ${formatNumber(gameState.insightPerSecond)}, Harmony: ${gameState.harmony.toFixed(1)}%. What should the player focus on next?`;
+
+            const advice = await callGrok(prompt, advisorBtn, systemPrompt);
+            log(`📜 ${advice}`, 'grok');
         }
 
         // --- Game Logic ---
