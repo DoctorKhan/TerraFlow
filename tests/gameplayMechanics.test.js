@@ -69,29 +69,31 @@ describe('Gameplay Mechanics Tests', () => {
         });
 
         test('should apply node bonuses correctly', () => {
+            const currentState = game.getState();
             game.gameState.setState({
-                ...game.getState(),
+                ...currentState,
                 units: { dreamers: 2, weavers: 2 },
-                nodes: { sustenance: 1, energy: 1 } // 1.2x multipliers
+                nodes: { sustenance: 1, energy: 1, cohesion: 0, cycling: 0 } // 1.2x multipliers
             });
-            
+
             game.gameLogic.updateGameState(1);
             const state = game.getState();
-            
+
             expect(state.energyPerSecond).toBeCloseTo(0.24); // 2 * 0.1 * 1.2
             expect(state.insightPerSecond).toBeCloseTo(0.24); // 2 * 0.1 * 1.2
         });
 
         test('should apply cohesion bonus to all production', () => {
+            const currentState = game.getState();
             game.gameState.setState({
-                ...game.getState(),
+                ...currentState,
                 units: { dreamers: 1, weavers: 1 },
-                nodes: { cohesion: 2 } // 1.1^2 = 1.21x multiplier
+                nodes: { sustenance: 0, energy: 0, cohesion: 2, cycling: 0 } // 1.1^2 = 1.21x multiplier
             });
-            
+
             game.gameLogic.updateGameState(1);
             const state = game.getState();
-            
+
             const expectedMultiplier = Math.pow(1.1, 2);
             expect(state.energyPerSecond).toBeCloseTo(0.1 * expectedMultiplier);
             expect(state.insightPerSecond).toBeCloseTo(0.1 * expectedMultiplier);

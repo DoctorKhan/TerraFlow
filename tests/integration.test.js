@@ -34,15 +34,19 @@ describe('TerraFlow Integration Tests', () => {
         });
 
         test('should generate insight with dreamers over time', () => {
-            // Create a dreamer
+            // Start with existing dreamer, create another one
             game.createUnit('dreamers');
+
+            // Reset insight to known value for testing
+            const currentState = game.getState();
+            game.gameState.setState({ ...currentState, insight: 5 });
 
             // Manually update game state to simulate time passing
             game.gameLogic.updateGameState(1); // 1 second
 
             const state = game.getState();
-            expect(state.insight).toBeCloseTo(0.1); // 1 dreamer * 0.1 * 1 second
-            expect(state.insightPerSecond).toBeCloseTo(0.1);
+            expect(state.insight).toBeCloseTo(5.2); // 5 + (2 dreamers * 0.1 * 1 second)
+            expect(state.insightPerSecond).toBeCloseTo(0.2); // 2 dreamers * 0.1
         });
 
         test('should allow creating weavers with insight', () => {

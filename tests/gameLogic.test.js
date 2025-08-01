@@ -13,48 +13,51 @@ describe('GameLogic', () => {
     describe('Unit Creation', () => {
         test('should create dreamer when player has enough energy', () => {
             const result = gameLogic.createUnit('dreamers');
-            
+
             expect(result).toBe(true);
-            
+
             const state = gameState.getState();
-            expect(state.units.dreamers).toBe(1);
-            expect(state.energy).toBe(0); // 10 - 10 = 0
-            expect(state.unitCosts.dreamers).toBeCloseTo(11.5); // 10 * 1.15
+            expect(state.units.dreamers).toBe(2); // Started with 1, now have 2
+            expect(state.energy).toBe(5); // 20 - 15 = 5
+            expect(state.unitCosts.dreamers).toBeCloseTo(17.25); // 15 * 1.15
         });
 
         test('should not create dreamer when player lacks energy', () => {
             gameState.setState({ energy: 5 });
-            
+
             const result = gameLogic.createUnit('dreamers');
-            
+
             expect(result).toBe(false);
-            
+
             const state = gameState.getState();
-            expect(state.units.dreamers).toBe(0);
+            expect(state.units.dreamers).toBe(1); // Should remain at starting value
             expect(state.energy).toBe(5); // Should remain unchanged
         });
 
         test('should create weaver when player has enough insight', () => {
-            gameState.setState({ insight: 15 });
-            
+            gameState.setState({ insight: 20 });
+
             const result = gameLogic.createUnit('weavers');
-            
+
             expect(result).toBe(true);
-            
+
             const state = gameState.getState();
-            expect(state.units.weavers).toBe(1);
-            expect(state.insight).toBe(5); // 15 - 10 = 5
-            expect(state.unitCosts.weavers).toBeCloseTo(11.5);
+            expect(state.units.weavers).toBe(2); // Started with 1, now have 2
+            expect(state.insight).toBe(5); // 20 - 15 = 5
+            expect(state.unitCosts.weavers).toBeCloseTo(17.25); // 15 * 1.15
         });
 
         test('should not create weaver when player lacks insight', () => {
+            // Reset insight to insufficient amount
+            gameState.setState({ insight: 5 }); // Less than 15 needed
+
             const result = gameLogic.createUnit('weavers');
-            
+
             expect(result).toBe(false);
-            
+
             const state = gameState.getState();
-            expect(state.units.weavers).toBe(0);
-            expect(state.insight).toBe(0);
+            expect(state.units.weavers).toBe(1); // Should remain at starting value
+            expect(state.insight).toBe(5); // Should remain unchanged
         });
     });
 
@@ -98,16 +101,18 @@ describe('GameLogic', () => {
         test('should calculate production correctly with units', () => {
             gameState.setState({
                 units: { dreamers: 2, weavers: 3 },
+                energy: 20, // Reset to known value
+                insight: 5, // Reset to known value
                 lastUpdate: Date.now() - 1000 // 1 second ago
             });
-            
+
             gameLogic.updateGameState(1); // 1 second delta
-            
+
             const state = gameState.getState();
             expect(state.energyPerSecond).toBeCloseTo(0.3); // 3 weavers * 0.1
             expect(state.insightPerSecond).toBeCloseTo(0.2); // 2 dreamers * 0.1
-            expect(state.energy).toBeCloseTo(10.3); // 10 + 0.3
-            expect(state.insight).toBeCloseTo(0.2); // 0 + 0.2
+            expect(state.energy).toBeCloseTo(20.3); // 20 + 0.3
+            expect(state.insight).toBeCloseTo(5.2); // 5 + 0.2
         });
 
         test('should apply node bonuses to production', () => {
