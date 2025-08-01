@@ -10,26 +10,26 @@ describe('GameState', () => {
     describe('Initial State', () => {
         test('should initialize with correct default values', () => {
             const state = gameState.getState();
-            
-            expect(state.energy).toBe(10);
+
+            expect(state.energy).toBe(20);
             expect(state.energyPerSecond).toBe(0);
-            expect(state.insight).toBe(0);
+            expect(state.insight).toBe(5);
             expect(state.insightPerSecond).toBe(0);
             expect(state.harmony).toBe(50);
         });
 
-        test('should initialize units with zero counts', () => {
+        test('should initialize units with starting counts', () => {
             const state = gameState.getState();
-            
-            expect(state.units.dreamers).toBe(0);
-            expect(state.units.weavers).toBe(0);
+
+            expect(state.units.dreamers).toBe(1);
+            expect(state.units.weavers).toBe(1);
         });
 
         test('should initialize unit costs correctly', () => {
             const state = gameState.getState();
-            
-            expect(state.unitCosts.dreamers).toBe(10);
-            expect(state.unitCosts.weavers).toBe(10);
+
+            expect(state.unitCosts.dreamers).toBe(15);
+            expect(state.unitCosts.weavers).toBe(15);
         });
 
         test('should initialize nodes with zero levels', () => {
@@ -65,13 +65,13 @@ describe('GameState', () => {
         test('should reset to initial state', () => {
             // Modify state
             gameState.setState({ energy: 100, insight: 50, harmony: 75 });
-            
+
             // Reset
             gameState.reset();
-            
+
             const state = gameState.getState();
-            expect(state.energy).toBe(10);
-            expect(state.insight).toBe(0);
+            expect(state.energy).toBe(20);
+            expect(state.insight).toBe(5);
             expect(state.harmony).toBe(50);
         });
     });

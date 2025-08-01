@@ -408,15 +408,20 @@
             gameState.insight += insightPerSecond * delta;
         };
 
+        let lastUIUpdate = 0;
         const gameLoop = () => {
             const now = Date.now();
             const delta = (now - gameState.lastUpdate) / 1000; // Time in seconds
-            
+
             updateGameState(delta);
-            
-            renderUI();
+
+            // Only update UI every 100ms to reduce button recreation frequency
+            if (now - lastUIUpdate > 100) {
+                renderUI();
+                lastUIUpdate = now;
+            }
             drawSanctuary();
-            
+
             gameState.lastUpdate = now;
             requestAnimationFrame(gameLoop);
         };

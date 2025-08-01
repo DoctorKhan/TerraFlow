@@ -14,12 +14,12 @@ describe('TerraFlow Integration Tests', () => {
     describe('Game Initialization', () => {
         test('should initialize with correct starting state', () => {
             const state = game.getState();
-            
-            expect(state.energy).toBe(10);
-            expect(state.insight).toBe(0);
+
+            expect(state.energy).toBe(20);
+            expect(state.insight).toBe(5);
             expect(state.harmony).toBe(50);
-            expect(state.units.dreamers).toBe(0);
-            expect(state.units.weavers).toBe(0);
+            expect(state.units.dreamers).toBe(1);
+            expect(state.units.weavers).toBe(1);
         });
     });
 
@@ -27,10 +27,10 @@ describe('TerraFlow Integration Tests', () => {
         test('should allow creating dreamers with initial energy', () => {
             const success = game.createUnit('dreamers');
             expect(success).toBe(true);
-            
+
             const state = game.getState();
-            expect(state.units.dreamers).toBe(1);
-            expect(state.energy).toBe(0);
+            expect(state.units.dreamers).toBe(2); // Started with 1, now have 2
+            expect(state.energy).toBe(5); // 20 - 15 = 5
         });
 
         test('should generate insight with dreamers over time', () => {

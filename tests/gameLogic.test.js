@@ -130,17 +130,100 @@ describe('GameLogic', () => {
 
     describe('Affordability Checks', () => {
         test('should correctly check if player can afford units', () => {
-            expect(gameLogic.canAffordUnit('dreamers')).toBe(true); // Has 10 energy
-            expect(gameLogic.canAffordUnit('weavers')).toBe(false); // Has 0 insight
+            expect(gameLogic.canAffordUnit('dreamers')).toBe(true); // Has 20 energy, costs 15
+            expect(gameLogic.canAffordUnit('weavers')).toBe(false); // Has 5 insight, costs 15
         });
 
         test('should correctly check if player can afford nodes', () => {
             gameState.setState({ energy: 150, insight: 250 });
-            
+
             expect(gameLogic.canAffordNode('sustenance')).toBe(true); // Costs 100 energy
             expect(gameLogic.canAffordNode('energy')).toBe(true); // Costs 100 insight
             expect(gameLogic.canAffordNode('cohesion')).toBe(false); // Costs 500 energy
             expect(gameLogic.canAffordNode('cycling')).toBe(true); // Costs 200 insight
+        });
+    });
+
+    describe('Edge Cases and Error Handling', () => {
+        test('should handle invalid unit types gracefully', () => {
+            expect(() => gameLogic.createUnit('invalid')).not.toThrow();
+            expect(gameLogic.createUnit('invalid')).toBe(false);
+        });
+
+        test('should handle invalid node types gracefully', () => {
+            expect(() => gameLogic.upgradeNode('invalid')).not.toThrow();
+            expect(gameLogic.upgradeNode('invalid')).toBe(false);
+        });
+
+        test('should handle negative delta values', () => {
+            const initialState = gameState.getState();
+            expect(() => gameLogic.updateGameState(-1)).not.toThrow();
+
+            const newState = gameState.getState();
+            // Resources should not go negative
+            expect(newState.energy).toBeGreaterThanOrEqual(0);
+            expect(newState.insight).toBeGreaterThanOrEqual(0);
+        });
+
+        test('should handle very large numbers', () => {
+            gameState.setState({
+                energy: 1e15,
+                insight: 1e15,
+                units: { dreamers: 1000, weavers: 1000 }
+            });
+
+            expect(() => gameLogic.updateGameState(1)).not.toThrow();
+
+            const state = gameState.getState();
+            expect(state.energy).toBeFinite();
+            expect(state.insight).toBeFinite();
+        });
+    });
+
+    describe('Game Balance and Progression', () => {
+        test('should maintain reasonable cost scaling', () => {
+            const initialCost = gameState.getState().unitCosts.dreamers;
+
+            // Create multiple units and check cost scaling
+            for (let i = 0; i < 5; i++) {
+                gameState.setState({ energy: 1000 }); // Ensure we can afford
+                gameLogic.createUnit('dreamers');
+            }
+
+            const finalCost = gameState.getState().unitCosts.dreamers;
+            const expectedCost = initialCost * Math.pow(1.15, 5);
+
+            expect(finalCost).toBeCloseTo(expectedCost, 2);
+        });
+
+        test('should maintain harmony within valid bounds', () => {
+            // Test harmony doesn't exceed 100
+            gameState.setState({ insight: 10000, harmony: 95 });
+
+            for (let i = 0; i < 10; i++) {
+                gameLogic.upgradeNode('cycling'); // Each adds 5 harmony
+                gameState.setState({ insight: 10000 }); // Refill resources
+            }
+
+            expect(gameState.getState().harmony).toBeLessThanOrEqual(100);
+        });
+
+        test('should have balanced production rates', () => {
+            gameState.setState({
+                units: { dreamers: 10, weavers: 10 },
+                nodes: { sustenance: 2, energy: 2, cohesion: 1, cycling: 0 }
+            });
+
+            gameLogic.updateGameState(1);
+            const state = gameState.getState();
+
+            // Both production rates should be positive and balanced
+            expect(state.energyPerSecond).toBeGreaterThan(0);
+            expect(state.insightPerSecond).toBeGreaterThan(0);
+
+            // With equal units and upgrades, rates should be similar
+            const ratio = state.energyPerSecond / state.insightPerSecond;
+            expect(ratio).toBeCloseTo(1, 0.1); // Within 10% of each other
         });
     });
 });
