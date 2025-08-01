@@ -191,43 +191,129 @@
             `;
         };
 
+        // TDD Fix: Stable button rendering that doesn't recreate buttons
+        let unitsInitialized = false;
+
         const renderUnits = () => {
+            // Only create buttons once, then update their states
+            if (!unitsInitialized) {
+                createUnitButtons();
+                unitsInitialized = true;
+            }
+            updateUnitButtonStates();
+        };
+
+        const createUnitButtons = () => {
             unitsPanel.innerHTML = '';
             for (const key in unitsConfig) {
                 const unit = unitsConfig[key];
-                const cost = gameState.unitCosts[key];
-                const canAfford = gameState[unit.costResource] >= cost;
                 const card = document.createElement('div');
                 card.className = "unit-card p-4 rounded-lg border border-indigo-800";
                 card.innerHTML = `
                     <h3 class="font-bold text-lg text-white">${unit.name}</h3>
                     <p class="text-sm text-indigo-200">${unit.description}</p>
-                    <button class="w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${canAfford ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 text-gray-400'}"
-                            onclick="createUnit('${key}')" ${!canAfford ? 'disabled' : ''}>
-                        Create (Cost: ${formatNumber(cost)} ${unit.costResource})
+                    <button class="unit-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors"
+                            data-unit="${key}">
+                        Create ${unit.name}
                     </button>
                 `;
+
+                // Add stable event listener
+                const button = card.querySelector('.unit-btn');
+                button.addEventListener('click', () => {
+                    if (!button.disabled) {
+                        createUnit(key);
+                    }
+                });
+
                 unitsPanel.appendChild(card);
             }
         };
 
+        const updateUnitButtonStates = () => {
+            for (const key in unitsConfig) {
+                const unit = unitsConfig[key];
+                const cost = gameState.unitCosts[key];
+                const canAfford = gameState[unit.costResource] >= cost;
+
+                const button = unitsPanel.querySelector(`[data-unit="${key}"]`);
+                if (button) {
+                    button.disabled = !canAfford;
+                    button.textContent = `Create (Cost: ${formatNumber(cost)} ${unit.costResource})`;
+
+                    // Update visual state without recreating
+                    button.className = `unit-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${
+                        canAfford ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-600 text-gray-400'
+                    }`;
+                }
+            }
+        };
+
+        // TDD Fix: Stable node button rendering
+        let nodesInitialized = false;
+
         const renderNodes = () => {
+            // Only create buttons once, then update their states
+            if (!nodesInitialized) {
+                createNodeButtons();
+                nodesInitialized = true;
+            }
+            updateNodeButtonStates();
+        };
+
+        const createNodeButtons = () => {
             modulesPanel.innerHTML = '';
             for (const key in nodesConfig) {
                 const node = nodesConfig[key];
-                const cost = gameState.nodeCosts[key];
-                const canAfford = gameState[node.costResource] >= cost;
                 const card = document.createElement('div');
                 card.className = "module-card p-4 rounded-lg";
                 card.innerHTML = `
-                    <h3 class="font-bold text-lg text-white">${node.name} <span class="text-sm font-normal text-indigo-300">(Lvl ${gameState.nodes[key]})</span></h3>
+                    <h3 class="font-bold text-lg text-white">
+                        ${node.name} <span class="text-sm font-normal text-indigo-300 level-display" data-node="${key}">(Lvl 0)</span>
+                    </h3>
                     <p class="text-sm text-indigo-200">${node.description}</p>
-                    <button class="w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${canAfford ? 'bg-teal-600 hover:bg-teal-700 text-white' : 'bg-gray-600 text-gray-400'}"
-                            onclick="upgradeNode('${key}')" ${!canAfford ? 'disabled' : ''}>
-                        Attune (Cost: ${formatNumber(cost)} ${node.costResource})
+                    <button class="node-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors"
+                            data-node="${key}">
+                        Attune ${node.name}
                     </button>
                 `;
+
+                // Add stable event listener
+                const button = card.querySelector('.node-btn');
+                button.addEventListener('click', () => {
+                    if (!button.disabled) {
+                        upgradeNode(key);
+                    }
+                });
+
                 modulesPanel.appendChild(card);
+            }
+        };
+
+        const updateNodeButtonStates = () => {
+            for (const key in nodesConfig) {
+                const node = nodesConfig[key];
+                const cost = gameState.nodeCosts[key];
+                const level = gameState.nodes[key];
+                const canAfford = gameState[node.costResource] >= cost;
+
+                // Update level display
+                const levelDisplay = modulesPanel.querySelector(`[data-node="${key}"].level-display`);
+                if (levelDisplay) {
+                    levelDisplay.textContent = `(Lvl ${level})`;
+                }
+
+                // Update button
+                const button = modulesPanel.querySelector(`button[data-node="${key}"]`);
+                if (button) {
+                    button.disabled = !canAfford;
+                    button.textContent = `Attune (Cost: ${formatNumber(cost)} ${node.costResource})`;
+
+                    // Update visual state without recreating
+                    button.className = `node-btn w-full mt-2 py-2 px-3 text-sm font-semibold rounded-md transition-colors ${
+                        canAfford ? 'bg-teal-600 hover:bg-teal-700 text-white' : 'bg-gray-600 text-gray-400'
+                    }`;
+                }
             }
         };
 
@@ -663,20 +749,61 @@
             }
         };
 
-        // --- Gemini API Integration ---
-        async function callGemini(prompt, button) {
-            if (button) { button.disabled = true; button.classList.add('loading'); button.innerHTML = 'AI is thinking...'; }
+        // --- Grok API Integration ---
+        async function callGrok(prompt, button, systemPrompt = "") {
+            if (button) {
+                button.disabled = true;
+                button.classList.add('loading');
+                button.innerHTML = 'AI is thinking...';
+            }
+
             try {
-                const apiKey = ""; const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                const payload = { contents: [{ parts: [{ text: prompt }] }] };
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+                const apiKey = ""; // Add your Grok API key here
+                if (!apiKey) {
+                    throw new Error("Grok API key not configured");
+                }
+
+                const apiUrl = "https://api.x.ai/v1/chat/completions";
+                const messages = [];
+
+                if (systemPrompt) {
+                    messages.push({ role: "system", content: systemPrompt });
+                }
+                messages.push({ role: "user", content: prompt });
+
+                const payload = {
+                    messages: messages,
+                    model: "grok-beta",
+                    stream: false,
+                    temperature: 0.8
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Grok API call failed: ${response.status} ${response.statusText}`);
+                }
+
                 const result = await response.json();
-                return result.candidates[0].content.parts[0].text;
-            } catch (error) { console.error("Gemini API Error:", error); return "The aetheric connection is unclear.";
+                return result.choices?.[0]?.message?.content || "The cosmic winds carry no clear message...";
+
+            } catch (error) {
+                console.error("Grok API Error:", error);
+                if (error.message.includes("API key")) {
+                    return "The Grok API key must be configured to access cosmic wisdom. Set your API key in the code.";
+                }
+                return "The aetheric connection is disrupted. The cosmic network seems unreachable.";
             } finally {
-                 if (button) {
+                if (button) {
                     button.disabled = false;
+                    button.classList.remove('loading');
                     if(button.id === 'seasonal-vision-btn') button.innerHTML = '✨ Get Resonant Vision';
                     if(button.id === 'advisor-btn') button.innerHTML = '📜 Ask Advisor';
                 }
@@ -704,7 +831,7 @@
                 if (key === 'dreamers') addSprite('crystal_tree');
                 if (key === 'weavers') addSprite('dome');
                 log(`A new ${unitConf.name} joins the sanctuary.`, 'success');
-                renderUI(); // Immediate UI feedback
+                // TDD Fix: Don't immediately re-render UI, let game loop handle it
             }
         };
 
@@ -720,7 +847,7 @@
                 }
                 if (key === 'sustenance') addSprite('garden');
                 log(`Attuned the ${nodeConf.name}. Its resonance grows stronger.`, 'success');
-                renderUI(); // Immediate UI feedback
+                // TDD Fix: Don't immediately re-render UI, let game loop handle it
             }
         };
         
@@ -756,8 +883,8 @@
 
             updateGameState(delta);
 
-            // Only update UI every 100ms to reduce button recreation frequency
-            if (now - lastUIUpdate > 100) {
+            // TDD Fix: Update UI less frequently to prevent button blinking
+            if (now - lastUIUpdate > 500) { // Increased from 100ms to 500ms
                 renderUI();
                 lastUIUpdate = now;
             }
