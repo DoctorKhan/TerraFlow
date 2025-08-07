@@ -856,6 +856,96 @@
     </div>
 
     <script>
+        // --- EMERGENCY WATCHDOG: Prevent infinite freeze ---
+        (function() {
+            let emergencyResetTriggered = false;
+
+            // Very aggressive 5-second watchdog for complete freezes
+            const emergencyTimer = setTimeout(() => {
+                if (!emergencyResetTriggered) {
+                    emergencyResetTriggered = true;
+                    console.error('🚨 EMERGENCY: Page completely frozen - forcing reset');
+
+                    // Nuclear option: clear everything and reload
+                    try {
+                        localStorage.clear();
+                    } catch (e) {
+                        console.error('Could not clear localStorage:', e);
+                    }
+
+                    // Force reload with cache bypass
+                    window.location.href = window.location.href.split('?')[0] + '?emergency_reset=' + Date.now();
+                }
+            }, 5000);
+
+            // Cancel emergency timer when DOM is ready
+            document.addEventListener('DOMContentLoaded', () => {
+                clearTimeout(emergencyTimer);
+                console.log('✅ DOM loaded - emergency timer cancelled');
+            });
+
+            // Also cancel if any script runs successfully
+            window.addEventListener('load', () => {
+                clearTimeout(emergencyTimer);
+                console.log('✅ Page loaded - emergency timer cancelled');
+            });
+        })();
+
+        // --- Loading Indicator ---
+        (function() {
+            // Show loading indicator immediately
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'emergency-loading';
+            loadingDiv.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.9);
+                    color: white;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                    font-family: Arial, sans-serif;
+                ">
+                    <div style="font-size: 24px; margin-bottom: 20px;">🌟 TerraFlow Loading...</div>
+                    <div style="font-size: 14px; opacity: 0.7; text-align: center; max-width: 400px;">
+                        If this takes more than 10 seconds, the page will automatically reset to fix any corrupted data.
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <div style="width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    </div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+
+            // Add to page immediately
+            if (document.body) {
+                document.body.appendChild(loadingDiv);
+            } else {
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.appendChild(loadingDiv);
+                });
+            }
+
+            // Remove loading indicator when game initializes
+            window.removeLoadingIndicator = () => {
+                const indicator = document.getElementById('emergency-loading');
+                if (indicator) {
+                    indicator.remove();
+                }
+            };
+        })();
+
         // --- CRITICAL FIX: Handle Corrupted Save Data ---
         const clearAllTerraFlowData = () => {
             try {
@@ -923,6 +1013,48 @@
             console.error('🚨 Unhandled promise rejection:', event.reason);
         });
 
+        // --- CRITICAL: Auto-reload if page becomes unresponsive ---
+        let pageLoadStartTime = Date.now();
+        let gameInitialized = false;
+        let autoReloadTriggered = false;
+
+        // Set a watchdog timer - if game doesn't initialize within 10 seconds, auto-reload
+        const watchdogTimer = setTimeout(() => {
+            if (!gameInitialized && !autoReloadTriggered) {
+                console.error('🚨 Page appears frozen - auto-reloading with data reset...');
+                autoReloadTriggered = true;
+
+                // Clear all data and reload
+                clearAllTerraFlowData();
+
+                // Add reset parameter to prevent infinite loops
+                const url = new URL(window.location);
+                url.searchParams.set('auto_reset', 'true');
+                window.location.href = url.toString();
+            }
+        }, 10000); // 10 second timeout
+
+        // Function to mark game as successfully initialized
+        const markGameInitialized = () => {
+            gameInitialized = true;
+            clearTimeout(watchdogTimer);
+
+            // Remove loading indicator
+            if (window.removeLoadingIndicator) {
+                window.removeLoadingIndicator();
+            }
+
+            console.log('✅ Game initialized successfully');
+        };
+
+        // Check if this is an auto-reset reload
+        if (window.location.search.includes('auto_reset=true')) {
+            console.log('🔄 Auto-reset reload detected - clearing URL parameter');
+            const url = new URL(window.location);
+            url.searchParams.delete('auto_reset');
+            window.history.replaceState({}, document.title, url.pathname);
+        }
+
         // --- Canvas & DOM Elements ---
         // TDD FIX: Initialize DOM elements when DOM is ready
         let canvas, ctx, modulesPanel, unitsPanel, statsBar, logOutput, seasonalVisionBtn, advisorBtn;
@@ -956,6 +1088,13 @@
 
             // Initialize the game after DOM is ready
             init();
+
+            // Fallback: remove loading indicator after 2 seconds even if game doesn't fully init
+            setTimeout(() => {
+                if (window.removeLoadingIndicator) {
+                    window.removeLoadingIndicator();
+                }
+            }, 2000);
         });
 
         // --- Log Panel Resizing Functionality ---
@@ -10485,6 +10624,9 @@
 
             runTests(); // Run TDD tests on startup
             gameLoop();
+
+            // Mark game as successfully initialized
+            markGameInitialized();
         };
 
         // TDD FIX: init() is now called in DOMContentLoaded event listener
