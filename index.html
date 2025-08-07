@@ -30,6 +30,29 @@
             height: 150px;
             background-color: rgba(10, 8, 28, 0.9);
             border-top: 1px solid rgba(76, 71, 128, 0.5);
+            resize: vertical;
+            overflow: hidden;
+            min-height: 100px;
+            max-height: 500px;
+            position: relative;
+        }
+
+        /* Resize handle styling */
+        .log-panel::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 8px;
+            background: linear-gradient(90deg, transparent, rgba(76, 71, 128, 0.8), transparent);
+            cursor: ns-resize;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .log-panel:hover::after {
+            background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.8), transparent);
         }
         canvas {
             border-radius: 0.75rem;
@@ -726,8 +749,8 @@
 
     </div>
 
-    <!-- Bottom Bar: Log & Help - TDD Fixed Height with Scrolling -->
-    <footer id="log-panel" class="w-full border-t border-indigo-900" style="height: 200px; min-height: 200px; max-height: 200px;">
+    <!-- Bottom Bar: Log & Help - Resizable -->
+    <footer id="log-panel" class="log-panel w-full border-t border-indigo-900">
         <div class="p-3 h-full flex">
             <!-- Log Section -->
             <div class="flex-1 flex flex-col mr-3">
@@ -812,9 +835,110 @@
                 advisorBtn: !!advisorBtn
             });
 
+            // Initialize log panel resizing
+            initializeLogPanelResizing();
+
             // Initialize the game after DOM is ready
             init();
         });
+
+        // --- Log Panel Resizing Functionality ---
+        const initializeLogPanelResizing = () => {
+            const logPanel = document.getElementById('log-panel');
+            if (!logPanel) return;
+
+            // Load saved height from localStorage
+            const savedHeight = localStorage.getItem('terraflow_log_panel_height');
+            if (savedHeight) {
+                logPanel.style.height = savedHeight + 'px';
+            }
+
+            // Create a more visible resize handle
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'log-resize-handle';
+            resizeHandle.innerHTML = '⋯⋯⋯'; // Three sets of dots to indicate draggable
+            resizeHandle.title = 'Drag to resize the aetheric log panel';
+            resizeHandle.style.cssText = `
+                position: absolute;
+                top: -6px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100px;
+                height: 12px;
+                background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.6), transparent);
+                cursor: ns-resize;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                color: rgba(139, 92, 246, 0.8);
+                transition: all 0.2s ease;
+                z-index: 10;
+                letter-spacing: 2px;
+            `;
+
+            // Add hover effect
+            resizeHandle.addEventListener('mouseenter', () => {
+                resizeHandle.style.background = 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.9), transparent)';
+                resizeHandle.style.color = 'rgba(139, 92, 246, 1)';
+            });
+
+            resizeHandle.addEventListener('mouseleave', () => {
+                resizeHandle.style.background = 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.6), transparent)';
+                resizeHandle.style.color = 'rgba(139, 92, 246, 0.8)';
+            });
+
+            logPanel.appendChild(resizeHandle);
+
+            // Resizing functionality
+            let isResizing = false;
+            let startY = 0;
+            let startHeight = 0;
+
+            const startResize = (e) => {
+                isResizing = true;
+                startY = e.clientY;
+                startHeight = parseInt(document.defaultView.getComputedStyle(logPanel).height, 10);
+                document.addEventListener('mousemove', doResize);
+                document.addEventListener('mouseup', stopResize);
+                document.body.style.cursor = 'ns-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            };
+
+            const doResize = (e) => {
+                if (!isResizing) return;
+
+                const deltaY = startY - e.clientY; // Inverted because we want to resize upward
+                const newHeight = Math.max(100, Math.min(500, startHeight + deltaY));
+
+                logPanel.style.height = newHeight + 'px';
+
+                // Save to localStorage
+                localStorage.setItem('terraflow_log_panel_height', newHeight);
+            };
+
+            const stopResize = () => {
+                isResizing = false;
+                document.removeEventListener('mousemove', doResize);
+                document.removeEventListener('mouseup', stopResize);
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            };
+
+            // Add event listeners
+            resizeHandle.addEventListener('mousedown', startResize);
+
+            // Also allow resizing by dragging the top border of the log panel
+            logPanel.addEventListener('mousedown', (e) => {
+                if (e.offsetY <= 8) { // Only if clicking near the top
+                    startResize(e);
+                }
+            });
+
+            console.log('Log panel resizing initialized');
+        };
 
         // --- TDD: Centralized Game State Initialization ---
         function createInitialGameState() {
