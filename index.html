@@ -1137,9 +1137,117 @@
             };
         })();
 
+        // --- BULLETPROOF STORAGE SYSTEM ---
+        const SafeStorage = {
+            // Test if storage is available and working
+            isAvailable: (storageType = 'localStorage') => {
+                try {
+                    const storage = window[storageType];
+                    if (!storage) return false;
+
+                    // Test write/read/delete
+                    const testKey = '__terraflow_storage_test__';
+                    storage.setItem(testKey, 'test');
+                    const result = storage.getItem(testKey);
+                    storage.removeItem(testKey);
+
+                    return result === 'test';
+                } catch (error) {
+                    console.warn(`${storageType} not available:`, error.message);
+                    return false;
+                }
+            },
+
+            // Safe get with fallback
+            getItem: (key, fallback = null, storageType = 'localStorage') => {
+                try {
+                    if (!SafeStorage.isAvailable(storageType)) return fallback;
+
+                    const value = window[storageType].getItem(key);
+                    return value !== null ? value : fallback;
+                } catch (error) {
+                    console.warn(`Failed to get ${key} from ${storageType}:`, error.message);
+                    return fallback;
+                }
+            },
+
+            // Safe set with error handling
+            setItem: (key, value, storageType = 'localStorage') => {
+                try {
+                    if (!SafeStorage.isAvailable(storageType)) return false;
+
+                    window[storageType].setItem(key, value);
+                    return true;
+                } catch (error) {
+                    console.warn(`Failed to set ${key} in ${storageType}:`, error.message);
+                    return false;
+                }
+            },
+
+            // Safe remove with error handling
+            removeItem: (key, storageType = 'localStorage') => {
+                try {
+                    if (!SafeStorage.isAvailable(storageType)) return false;
+
+                    window[storageType].removeItem(key);
+                    return true;
+                } catch (error) {
+                    console.warn(`Failed to remove ${key} from ${storageType}:`, error.message);
+                    return false;
+                }
+            },
+
+            // Safe clear with error handling
+            clear: (storageType = 'localStorage') => {
+                try {
+                    if (!SafeStorage.isAvailable(storageType)) return false;
+
+                    window[storageType].clear();
+                    return true;
+                } catch (error) {
+                    console.warn(`Failed to clear ${storageType}:`, error.message);
+                    return false;
+                }
+            },
+
+            // Safe JSON parse with fallback
+            getJSON: (key, fallback = null, storageType = 'localStorage') => {
+                try {
+                    const value = SafeStorage.getItem(key, null, storageType);
+                    if (value === null) return fallback;
+
+                    return JSON.parse(value);
+                } catch (error) {
+                    console.warn(`Failed to parse JSON for ${key}:`, error.message);
+                    return fallback;
+                }
+            },
+
+            // Safe JSON stringify and set
+            setJSON: (key, value, storageType = 'localStorage') => {
+                try {
+                    const jsonString = JSON.stringify(value);
+                    return SafeStorage.setItem(key, jsonString, storageType);
+                } catch (error) {
+                    console.warn(`Failed to stringify and set ${key}:`, error.message);
+                    return false;
+                }
+            }
+        };
+
+        // Test storage availability on startup
+        const storageStatus = {
+            localStorage: SafeStorage.isAvailable('localStorage'),
+            sessionStorage: SafeStorage.isAvailable('sessionStorage')
+        };
+
+        console.log('🔒 Storage availability:', storageStatus);
+
         // --- CRITICAL FIX: Handle Corrupted Save Data ---
         const clearAllTerraFlowData = () => {
             try {
+                console.log('🔄 Clearing TerraFlow data using safe storage...');
+
                 // Clear all possible TerraFlow localStorage keys
                 const keysToRemove = [
                     'terraflow_save_data',
@@ -1154,14 +1262,23 @@
                     'debug_mode'
                 ];
 
+                let clearedCount = 0;
                 keysToRemove.forEach(key => {
-                    localStorage.removeItem(key);
+                    if (SafeStorage.removeItem(key)) {
+                        clearedCount++;
+                    }
                 });
 
-                console.log('🔄 All TerraFlow data cleared from localStorage');
-                return true;
+                // Also try to clear sessionStorage keys
+                const sessionKeys = ['terraflow_reset_count', 'terraflow_last_reset', 'tf_reset_attempts'];
+                sessionKeys.forEach(key => {
+                    SafeStorage.removeItem(key, 'sessionStorage');
+                });
+
+                console.log(`🔄 Cleared ${clearedCount}/${keysToRemove.length} localStorage keys`);
+                return clearedCount > 0 || !storageStatus.localStorage; // Success if we cleared something or storage isn't available
             } catch (error) {
-                console.error('❌ Error clearing localStorage:', error);
+                console.error('❌ Error clearing TerraFlow data:', error);
                 return false;
             }
         };
@@ -1379,8 +1496,8 @@ ${error.stack || error.message}
             const logPanel = document.getElementById('log-panel');
             if (!logPanel) return;
 
-            // Load saved height from localStorage
-            const savedHeight = localStorage.getItem('terraflow_log_panel_height');
+            // Load saved height using safe storage
+            const savedHeight = SafeStorage.getItem('terraflow_log_panel_height');
             if (savedHeight) {
                 logPanel.style.height = savedHeight + 'px';
             }
@@ -1447,8 +1564,8 @@ ${error.stack || error.message}
 
                 logPanel.style.height = newHeight + 'px';
 
-                // Save to localStorage
-                localStorage.setItem('terraflow_log_panel_height', newHeight);
+                // Save using safe storage
+                SafeStorage.setItem('terraflow_log_panel_height', newHeight);
             };
 
             const stopResize = () => {
@@ -1484,19 +1601,14 @@ ${error.stack || error.message}
 
             if (!minimapContainer) return;
 
-            // Load saved settings with error handling
-            let minimapPosition;
-            try {
-                minimapPosition = JSON.parse(localStorage.getItem('terraflow_minimap_position') || '{"bottom": "210px", "left": "8px"}');
-            } catch (error) {
-                console.warn('Invalid minimap position data, using defaults');
-                minimapPosition = {"bottom": "210px", "left": "8px"};
-            }
+            // Load saved settings with safe storage
+            const defaultPosition = {"bottom": "210px", "left": "8px"};
+            const minimapPosition = SafeStorage.getJSON('terraflow_minimap_position', defaultPosition);
 
             const savedSettings = {
-                visible: localStorage.getItem('terraflow_minimap_visible') !== 'false',
-                collapsed: localStorage.getItem('terraflow_minimap_collapsed') === 'true',
-                transparent: localStorage.getItem('terraflow_minimap_transparent') === 'true',
+                visible: SafeStorage.getItem('terraflow_minimap_visible', 'true') !== 'false',
+                collapsed: SafeStorage.getItem('terraflow_minimap_collapsed', 'false') === 'true',
+                transparent: SafeStorage.getItem('terraflow_minimap_transparent', 'false') === 'true',
                 position: minimapPosition
             };
 
@@ -8992,6 +9104,18 @@ ${error.stack || error.message}
         const CURRENT_SAVE_VERSION = "1.0.0";
 
         const saveGameState = () => {
+            // Skip saving in debug mode
+            if (DEBUG_MODE) {
+                console.log('🔧 Skipping save in debug mode');
+                return true;
+            }
+
+            // Check if storage is available
+            if (!storageStatus.localStorage) {
+                console.warn('⚠️ localStorage not available - cannot save game');
+                return false;
+            }
+
             try {
                 const saveData = {
                     version: CURRENT_SAVE_VERSION,
@@ -9064,11 +9188,17 @@ ${error.stack || error.message}
                     }
                 };
 
-                localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-                gameState.lastSaved = Date.now();
+                // Use safe storage to save
+                const saveSuccess = SafeStorage.setJSON(SAVE_KEY, saveData);
 
-                log('💾 Game progress saved successfully!', 'success');
-                return true;
+                if (saveSuccess) {
+                    gameState.lastSaved = Date.now();
+                    log('💾 Game progress saved successfully!', 'success');
+                    return true;
+                } else {
+                    log('❌ Failed to save game progress - storage unavailable.', 'error');
+                    return false;
+                }
             } catch (error) {
                 console.error('Failed to save game:', error);
                 log('❌ Failed to save game progress. Please try again.', 'error');
@@ -9077,21 +9207,24 @@ ${error.stack || error.message}
         };
 
         const loadGameState = () => {
-            try {
-                const savedData = localStorage.getItem(SAVE_KEY);
-                if (!savedData) {
-                    console.log('📁 No saved game found. Starting fresh!');
-                    return false;
-                }
+            // Skip loading in debug mode
+            if (DEBUG_MODE) {
+                console.log('🔧 Skipping load in debug mode');
+                return false;
+            }
 
-                // CRITICAL FIX: Validate JSON before parsing
-                let saveData;
-                try {
-                    saveData = JSON.parse(savedData);
-                } catch (parseError) {
-                    console.error('❌ Corrupted save data detected:', parseError);
-                    console.log('🔄 Clearing corrupted save and starting fresh...');
-                    clearAllTerraFlowData();
+            // Check if storage is available
+            if (!storageStatus.localStorage) {
+                console.log('📁 localStorage not available. Starting fresh!');
+                return false;
+            }
+
+            try {
+                // Use safe storage to load
+                const saveData = SafeStorage.getJSON(SAVE_KEY, null);
+
+                if (!saveData) {
+                    console.log('📁 No saved game found. Starting fresh!');
                     return false;
                 }
 
@@ -9250,8 +9383,8 @@ ${error.stack || error.message}
                         }
                     };
 
-                    // Save migrated data
-                    localStorage.setItem(SAVE_KEY, JSON.stringify(newSaveData));
+                    // Save migrated data using safe storage
+                    SafeStorage.setJSON(SAVE_KEY, newSaveData);
                     saveData = newSaveData;
                     migrated = true;
                 }
@@ -9304,11 +9437,15 @@ ${error.stack || error.message}
             reader.onload = (e) => {
                 try {
                     const saveData = JSON.parse(e.target.result);
-                    localStorage.setItem(SAVE_KEY, e.target.result);
 
-                    if (loadGameState()) {
+                    // Use safe storage to import
+                    const importSuccess = SafeStorage.setItem(SAVE_KEY, e.target.result);
+
+                    if (importSuccess && loadGameState()) {
                         log('📥 Save data imported successfully!', 'success');
                         location.reload(); // Refresh to apply imported data
+                    } else {
+                        log('❌ Failed to import save data - storage unavailable.', 'error');
                     }
                 } catch (error) {
                     console.error('Import failed:', error);
