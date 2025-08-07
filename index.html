@@ -9401,23 +9401,21 @@
             // Always save to IndexedDB
             saveDebugLog(category, message, data);
 
-            // Console log if debug mode enabled
+            // Console log if debug mode enabled (but NOT to game log)
             if (window.location.search.includes('debug') || localStorage.getItem('debug_mode') === 'true') {
                 console.log(`🐛 [${timestamp}] ${category}: ${message}`, data || '');
-
-                // Also log to game log for visibility
-                log(`🐛 DEBUG [${category}]: ${message}`, 'info');
+                // TDD FIX: Removed log() call - debug logs should only appear in debug panel, not aetheric log
             }
         };
 
         const enableDebugMode = () => {
             localStorage.setItem('debug_mode', 'true');
-            log('🐛 Debug mode enabled! Check console for detailed logs.', 'success');
+            log('🐛 Debug mode enabled! Debug logs will appear in console and debug panel only.', 'success');
         };
 
         const disableDebugMode = () => {
             localStorage.setItem('debug_mode', 'false');
-            log('🐛 Debug mode disabled.', 'info');
+            log('🐛 Debug mode disabled. Debug logs will only be saved to debug panel.', 'info');
         };
 
         const showDebugViewer = async () => {
