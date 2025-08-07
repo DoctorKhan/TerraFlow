@@ -1425,6 +1425,19 @@
                     console.log('🔧 Skipping minimap controls in debug mode');
                 }
 
+                // Initialize copy log button
+                try {
+                    const copyLogBtn = document.getElementById('copy-log-btn');
+                    if (copyLogBtn) {
+                        copyLogBtn.addEventListener('click', copyLogToClipboard);
+                        console.log('✅ Copy log button initialized');
+                    } else {
+                        console.warn('⚠️ Copy log button not found');
+                    }
+                } catch (error) {
+                    console.error('❌ Copy log button initialization failed:', error);
+                }
+
                 // Initialize the game after DOM is ready
                 try {
                     console.log('🎮 Starting game initialization...');
@@ -2412,6 +2425,82 @@ ${error.stack || error.message}
             logOutput.prepend(p);
             if (logOutput.children.length > 20) {
                 logOutput.lastChild.remove();
+            }
+        };
+
+        // Copy log to clipboard functionality
+        const copyLogToClipboard = async () => {
+            try {
+                if (!logOutput) {
+                    console.error('Log output element not found');
+                    return;
+                }
+
+                // Get all log entries
+                const logEntries = Array.from(logOutput.children);
+
+                if (logEntries.length === 0) {
+                    log('📋 No log entries to copy', 'warning');
+                    return;
+                }
+
+                // Extract text content from each log entry (reverse to get chronological order)
+                const logText = logEntries
+                    .reverse()
+                    .map(entry => {
+                        // Remove HTML tags and get clean text
+                        const text = entry.textContent || entry.innerText;
+                        return text;
+                    })
+                    .join('\n');
+
+                // Add header with timestamp and game info
+                const header = `=== TerraFlow Game Log ===
+Generated: ${new Date().toISOString()}
+Game Version: 1.0.0
+Energy: ${gameState.energy || 0}
+Consciousness: ${gameState.consciousness || 0}
+Story Phase: ${gameState.storyPhase || 'unknown'}
+Debug Mode: ${DEBUG_MODE ? 'ON' : 'OFF'}
+
+=== Log Entries ===
+`;
+
+                const fullLogText = header + logText;
+
+                // Try to use the modern Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(fullLogText);
+                    log('📋 Log copied to clipboard successfully!', 'success');
+                } else {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = fullLogText;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+
+                    try {
+                        const successful = document.execCommand('copy');
+                        if (successful) {
+                            log('📋 Log copied to clipboard successfully!', 'success');
+                        } else {
+                            throw new Error('Copy command failed');
+                        }
+                    } catch (err) {
+                        console.error('Fallback copy failed:', err);
+                        log('❌ Failed to copy log to clipboard', 'error');
+                    } finally {
+                        document.body.removeChild(textArea);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Copy to clipboard failed:', error);
+                log('❌ Failed to copy log to clipboard', 'error');
             }
         };
 
