@@ -4,6 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TerraFlow: Roots of Transition</title>
+
+    <!-- Last resort: Meta refresh if page doesn't load in 15 seconds -->
+    <script>
+        if (!window.location.search.includes('meta_refresh')) {
+            setTimeout(function() {
+                if (!window.terraflowLoaded) {
+                    console.log('🚨 META REFRESH: Page failed to load, forcing refresh...');
+                    window.location.href = window.location.pathname + '?meta_refresh=' + Date.now();
+                }
+            }, 15000);
+        }
+    </script>
+
+    <!-- CRITICAL: Pre-emptive data clearing BEFORE any other scripts -->
+    <script>
+        (function() {
+            // Ultra-aggressive corruption detection and clearing
+            try {
+                // Check if we're in a reset loop
+                const resetAttempts = parseInt(sessionStorage.getItem('tf_reset_attempts') || '0');
+                if (resetAttempts > 5) {
+                    // Too many attempts - show manual recovery
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.body.innerHTML = `
+                            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                                        background: linear-gradient(135deg, #1a1a2e, #16213e);
+                                        color: white; display: flex; flex-direction: column;
+                                        justify-content: center; align-items: center;
+                                        font-family: Arial, sans-serif; z-index: 99999;">
+                                <h1 style="font-size: 2em; margin-bottom: 20px;">🛠️ TerraFlow Recovery</h1>
+                                <p style="margin-bottom: 20px; text-align: center; max-width: 500px;">
+                                    Multiple automatic recovery attempts failed. Manual intervention required.
+                                </p>
+                                <button onclick="sessionStorage.clear(); localStorage.clear(); location.href = location.pathname;"
+                                        style="padding: 15px 30px; font-size: 18px; background: #4CAF50;
+                                               color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                    🔄 Manual Reset
+                                </button>
+                                <p style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
+                                    This will clear all saved data and restart the game.
+                                </p>
+                            </div>
+                        `;
+                    });
+                    return;
+                }
+
+                // Quick corruption check
+                const suspiciousKeys = ['terraflow_save_data', 'terraflow_save'];
+                let foundCorruption = false;
+
+                for (const key of suspiciousKeys) {
+                    const value = localStorage.getItem(key);
+                    if (value && value.length > 0) {
+                        // Quick validation - check if it starts with { and ends with }
+                        if (!value.trim().startsWith('{') || !value.trim().endsWith('}')) {
+                            foundCorruption = true;
+                            break;
+                        }
+                        // Quick JSON validation
+                        try {
+                            const parsed = JSON.parse(value);
+                            if (!parsed || typeof parsed !== 'object') {
+                                foundCorruption = true;
+                                break;
+                            }
+                        } catch (e) {
+                            foundCorruption = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (foundCorruption) {
+                    console.log('🚨 PRE-EMPTIVE: Corrupted data detected, clearing...');
+                    localStorage.clear();
+                    sessionStorage.setItem('tf_reset_attempts', (resetAttempts + 1).toString());
+                    location.replace(location.pathname + '?cleared=' + Date.now());
+                }
+
+            } catch (error) {
+                console.error('Pre-emptive clearing failed:', error);
+                // If even this fails, try nuclear option
+                try {
+                    localStorage.clear();
+                    location.replace(location.pathname + '?nuclear=' + Date.now());
+                } catch (e) {
+                    console.error('Nuclear option failed:', e);
+                }
+            }
+        })();
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -856,6 +949,70 @@
     </div>
 
     <script>
+        // --- IMMEDIATE NUCLEAR OPTION: Clear data BEFORE any other code runs ---
+        (function() {
+            // Check if we've been here before (prevent infinite loops)
+            const resetCount = parseInt(sessionStorage.getItem('terraflow_reset_count') || '0');
+            const lastReset = parseInt(sessionStorage.getItem('terraflow_last_reset') || '0');
+            const now = Date.now();
+
+            // If we've reset more than 3 times in the last minute, stop trying
+            if (resetCount > 3 && (now - lastReset) < 60000) {
+                console.error('🚨 Too many resets - stopping auto-reset to prevent infinite loop');
+                document.body.innerHTML = `
+                    <div style="padding: 20px; font-family: Arial; background: #000; color: #fff; text-align: center;">
+                        <h2>🚨 TerraFlow Recovery Mode</h2>
+                        <p>The game has been reset multiple times but is still having issues.</p>
+                        <p>Please try:</p>
+                        <ol style="text-align: left; max-width: 400px; margin: 0 auto;">
+                            <li>Clear your browser cache completely</li>
+                            <li>Try a different browser</li>
+                            <li>Disable browser extensions</li>
+                            <li>Check browser console for errors</li>
+                        </ol>
+                        <button onclick="sessionStorage.clear(); localStorage.clear(); location.reload();"
+                                style="margin-top: 20px; padding: 10px 20px; font-size: 16px;">
+                            Force Reset & Try Again
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Check for corrupted localStorage immediately
+            let hasCorruptedData = false;
+            try {
+                const keys = ['terraflow_save_data', 'terraflow_save'];
+                for (const key of keys) {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        try {
+                            JSON.parse(data);
+                        } catch (e) {
+                            hasCorruptedData = true;
+                            break;
+                        }
+                    }
+                }
+            } catch (e) {
+                hasCorruptedData = true;
+            }
+
+            // If we detect corrupted data, clear it immediately
+            if (hasCorruptedData) {
+                console.log('🚨 Corrupted data detected - clearing immediately');
+                try {
+                    localStorage.clear();
+                    sessionStorage.setItem('terraflow_reset_count', (resetCount + 1).toString());
+                    sessionStorage.setItem('terraflow_last_reset', now.toString());
+                    location.reload(true);
+                    return;
+                } catch (e) {
+                    console.error('Failed to clear localStorage:', e);
+                }
+            }
+        })();
+
         // --- EMERGENCY WATCHDOG: Prevent infinite freeze ---
         (function() {
             let emergencyResetTriggered = false;
@@ -10627,6 +10784,9 @@
 
             // Mark game as successfully initialized
             markGameInitialized();
+
+            // Set global flag to prevent meta refresh
+            window.terraflowLoaded = true;
         };
 
         // TDD FIX: init() is now called in DOMContentLoaded event listener
