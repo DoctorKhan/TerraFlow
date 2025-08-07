@@ -50,19 +50,20 @@ describe('TerraFlow Integration Tests', () => {
         });
 
         test('should allow creating weavers with insight', () => {
-            // First create a dreamer and give it some time to generate insight
-            game.createUnit('dreamers');
-            
-            // Manually add insight for testing
-            const currentState = game.getState();
-            game.gameState.setState({ ...currentState, insight: 15 });
-            
+            // TDD Fix: Account for initial units and exponential cost scaling
+            const initialState = game.getState();
+            const initialWeavers = initialState.units.weavers; // Should be 1
+            const weaverCost = initialState.unitCosts.weavers; // Cost for next weaver (scaled)
+
+            // Manually add enough insight for testing
+            game.gameState.setState({ ...initialState, insight: weaverCost + 5 });
+
             const success = game.createUnit('weavers');
             expect(success).toBe(true);
-            
+
             const state = game.getState();
-            expect(state.units.weavers).toBe(1);
-            expect(state.insight).toBe(5); // 15 - 10 = 5
+            expect(state.units.weavers).toBe(initialWeavers + 1); // 1 + 1 = 2
+            expect(state.insight).toBe(5); // (weaverCost + 5) - weaverCost = 5
         });
 
         test('should allow upgrading nodes with sufficient resources', () => {
@@ -81,16 +82,20 @@ describe('TerraFlow Integration Tests', () => {
 
     describe('Resource Management', () => {
         test('should prevent actions when resources are insufficient', () => {
-            // Try to create weaver without insight
+            // TDD Fix: Account for initial units (game starts with 1 weaver)
+            const initialState = game.getState();
+            const initialWeavers = initialState.units.weavers; // Should be 1
+
+            // Try to create weaver without sufficient insight (default insight is 5, need 10)
             const weaverResult = game.createUnit('weavers');
             expect(weaverResult).toBe(false);
-            
+
             // Try to upgrade expensive node without resources
             const nodeResult = game.upgradeNode('cohesion');
             expect(nodeResult).toBe(false);
-            
+
             const state = game.getState();
-            expect(state.units.weavers).toBe(0);
+            expect(state.units.weavers).toBe(initialWeavers); // Still 1 (no new weaver created)
             expect(state.nodes.cohesion).toBe(0);
         });
 

@@ -33,7 +33,7 @@ describe('Cosmic Races and Alien Species Tests', () => {
                 quantumSages: 120,
                 nebulaShepherds: 200
             },
-            unlockedRaces: ['human', 'stellar']
+            unlockedRaces: ['human'] // TDD Fix: Don't pre-unlock stellar for testing
         };
 
         racesConfig = {
@@ -122,18 +122,21 @@ describe('Cosmic Races and Alien Species Tests', () => {
         test('should unlock races when conditions are met', () => {
             const unlockRaces = (gameState, racesConfig) => {
                 const newlyUnlocked = [];
-                
+
                 Object.entries(racesConfig).forEach(([raceKey, race]) => {
-                    if (!gameState.unlockedRaces.includes(raceKey) && !race.unlocked) {
+                    // TDD Fix: Only check if not already in unlockedRaces array
+                    if (!gameState.unlockedRaces.includes(raceKey)) {
                         if (!race.unlockCondition) {
+                            // No unlock condition means always unlockable
                             gameState.unlockedRaces.push(raceKey);
                             race.unlocked = true;
                             newlyUnlocked.push(raceKey);
                         } else {
+                            // Check if unlock conditions are met
                             const canUnlock = Object.entries(race.unlockCondition).every(([resource, required]) => {
                                 return gameState[resource] >= required;
                             });
-                            
+
                             if (canUnlock) {
                                 gameState.unlockedRaces.push(raceKey);
                                 race.unlocked = true;
@@ -142,7 +145,7 @@ describe('Cosmic Races and Alien Species Tests', () => {
                         }
                     }
                 });
-                
+
                 return newlyUnlocked;
             };
 
@@ -253,8 +256,9 @@ describe('Cosmic Races and Alien Species Tests', () => {
             const stellarBonus = calculateRacialBonus('stellarNomads', 3, mockGameState);
             const quantumBonus = calculateRacialBonus('quantumSages', 2, mockGameState);
 
-            expect(stellarBonus).toBe(0.45); // 0.15 * 3
-            expect(quantumBonus).toBe(0.8);  // 0.4 * 2
+            // TDD Fix: Use toBeCloseTo for floating point comparisons
+            expect(stellarBonus).toBeCloseTo(0.45, 2); // 0.15 * 3
+            expect(quantumBonus).toBeCloseTo(0.8, 2);  // 0.4 * 2
         });
     });
 

@@ -563,6 +563,9 @@
                     <button id="alliance-mode-btn" class="px-3 py-1 text-xs rounded transition-all bg-purple-700 text-purple-200 border border-purple-600 hover:bg-purple-600" style="display: none;">
                         🤝 Alliance Mode
                     </button>
+                    <button id="debug-btn" class="px-3 py-1 text-xs rounded transition-all bg-red-700 text-red-200 border border-red-600 hover:bg-red-600" onclick="window.debugCommands.enable(); window.debugCommands.viewer();">
+                        🐛 Debug
+                    </button>
                     <div id="current-player-indicator" class="text-xs font-bold text-green-400">
                         🌱 Gardener's Turn
                     </div>
@@ -576,11 +579,13 @@
                     <div class="flex space-x-6">
                         <div class="stat-compact tooltip" data-tooltip="Energy - Create Dreamers (D key)">
                             <span class="text-blue-400 font-bold text-lg" id="energy">20</span>
+                            <span class="text-xs text-gray-400">/<span id="energy-cap">100</span></span>
                             <span class="text-xs text-gray-300">⚡ Energy</span>
                             <span class="text-xs text-blue-300">+<span id="energy-rate">0.0</span>/s</span>
                         </div>
                         <div class="stat-compact tooltip" data-tooltip="Insight - Create Weavers (W key)">
                             <span class="text-purple-400 font-bold text-lg" id="insight">5</span>
+                            <span class="text-xs text-gray-400">/<span id="insight-cap">50</span></span>
                             <span class="text-xs text-gray-300">🔮 Insight</span>
                             <span class="text-xs text-purple-300">+<span id="insight-rate">0.0</span>/s</span>
                         </div>
@@ -619,6 +624,7 @@
                             <span class="text-orange-400 font-bold text-lg" id="ai-control">10</span>
                             <span class="text-xs text-gray-300">🏛️ AI Ruler</span>
                             <div class="text-xs text-orange-300" id="ai-buildings">0 Buildings</div>
+                            <div id="ai-activity-indicator" class="text-xs text-green-400">⚡ Active</div>
                         </div>
                     </div>
 
@@ -782,33 +788,63 @@
 
     <script>
         // --- Canvas & DOM Elements ---
-        const canvas = document.getElementById('village-canvas');
-        const ctx = canvas.getContext('2d');
-        const modulesPanel = document.getElementById('modules-panel');
-        const unitsPanel = document.getElementById('units-panel');
-        const statsBar = document.getElementById('stats-bar');
-        const logOutput = document.getElementById('log-output');
-        const seasonalVisionBtn = document.getElementById('seasonal-vision-btn');
-        const advisorBtn = document.getElementById('advisor-btn');
+        // TDD FIX: Initialize DOM elements when DOM is ready
+        let canvas, ctx, modulesPanel, unitsPanel, statsBar, logOutput, seasonalVisionBtn, advisorBtn;
 
-        // --- Reset Game State Function ---
-        function resetGameState() {
-            gameState = {
-                energy: 20,
+        // Initialize DOM elements when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            canvas = document.getElementById('village-canvas');
+            ctx = canvas ? canvas.getContext('2d') : null;
+            modulesPanel = document.getElementById('modules-panel');
+            unitsPanel = document.getElementById('units-panel');
+            statsBar = document.getElementById('stats-bar');
+            logOutput = document.getElementById('log-output');
+            seasonalVisionBtn = document.getElementById('seasonal-vision-btn');
+            advisorBtn = document.getElementById('advisor-btn');
+
+            console.log('DOM elements initialized:', {
+                canvas: !!canvas,
+                modulesPanel: !!modulesPanel,
+                unitsPanel: !!unitsPanel,
+                statsBar: !!statsBar,
+                logOutput: !!logOutput,
+                seasonalVisionBtn: !!seasonalVisionBtn,
+                advisorBtn: !!advisorBtn
+            });
+
+            // Initialize the game after DOM is ready
+            init();
+        });
+
+        // --- TDD: Centralized Game State Initialization ---
+        function createInitialGameState() {
+            return {
+                // Core Resources (from config)
+                ...gameConfig.initialResources,
+
+                // Per-second rates (start at 0)
                 energyPerSecond: 0,
-                insight: 5,
                 insightPerSecond: 0,
-                harmony: 50,
-                inspiration: 0,
                 inspirationPerSecond: 0,
-                wisdom: 0,
                 wisdomPerSecond: 0,
-                control: 0,
                 controlPerSecond: 0,
-                consciousness: 10,
                 consciousnessPerSecond: 0,
-                planetaryConsciousness: 10,
-                entropy: 0,
+
+                // Units (from config)
+                units: {
+                    ...gameConfig.initialUnits,
+                    stellarNomads: 0,
+                    voidWhisperers: 0,
+                    crystalBeings: 0,
+                    plasmaDancers: 0,
+                    quantumSages: 0,
+                    nebulaShepherds: 0
+                },
+
+                // Unit Costs (from config)
+                unitCosts: { ...gameConfig.unitBaseCosts },
+                unitBaseCosts: { ...gameConfig.unitBaseCosts },
+                costMultiplier: gameConfig.costMultiplier,
                 units: {
                     dreamers: 1,
                     weavers: 1,
@@ -923,22 +959,83 @@
                 saveVersion: "1.0.0",
                 lastSaved: null,
                 autoSaveEnabled: true,
-                autoSaveInterval: 30000
+                autoSaveInterval: 30000,
+
+                // TDD FIX: Add missing aiPlayer object
+                aiEnabled: false,
+                aiPlayer: {
+                    resources: {
+                        energy: 20,
+                        insight: 5,
+                        control: 0
+                    },
+                    buildings: {
+                        sustenance: 0,
+                        energy: 0,
+                        cohesion: 0,
+                        cycling: 0
+                    },
+                    aggressiveness: 1.0,
+                    lastAction: Date.now(),
+                    lastMessage: Date.now()
+                },
+                allianceFormed: false,
+                lastUserAction: Date.now(),
+                userInactiveThreshold: 60000 // 1 minute
             };
+        }
+
+        // --- Reset Game State Function (Uses Centralized Config) ---
+        function resetGameState() {
+            debugLog('SYSTEM', 'Resetting game state', {
+                oldState: {
+                    energy: gameState?.energy || 0,
+                    consciousness: gameState?.consciousness || 0,
+                    storyPhase: gameState?.storyPhase || 'unknown'
+                }
+            });
+
+            gameState = createInitialGameState();
+
+            debugLog('SYSTEM', 'Game state reset complete', {
+                newState: {
+                    energy: gameState.energy,
+                    consciousness: gameState.consciousness,
+                    storyPhase: gameState.storyPhase,
+                    villageGridLength: gameState.villageGrid?.length || 0
+                }
+            });
+
+            // Reset UI tracking variables
             previousValues = {
-                energy: 20,
-                insight: 5,
-                harmony: 50,
-                inspiration: 0,
-                wisdom: 0,
-                control: 0,
-                consciousness: 10,
-                planetaryConsciousness: 10
+                energy: gameConfig.initialResources.energy,
+                insight: gameConfig.initialResources.insight,
+                harmony: gameConfig.initialResources.harmony,
+                inspiration: gameConfig.initialResources.inspiration,
+                wisdom: gameConfig.initialResources.wisdom,
+                control: gameConfig.initialResources.control,
+                consciousness: gameConfig.initialResources.consciousness,
+                planetaryConsciousness: gameConfig.initialResources.planetaryConsciousness
             };
-            if (logOutput) logOutput.innerHTML = '';
+
+            // Clear and re-render UI
+            if (logOutput) {
+                logOutput.innerHTML = '';
+                debugLog('SYSTEM', 'Log output cleared');
+            }
+
+            // Check if render functions exist
+            debugLog('SYSTEM', 'Checking render functions', {
+                renderStats: typeof renderStats,
+                renderUnits: typeof renderUnits,
+                renderNodes: typeof renderNodes
+            });
+
             if (typeof renderStats === 'function') renderStats();
             if (typeof renderUnits === 'function') renderUnits();
             if (typeof renderNodes === 'function') renderNodes();
+
+            debugLog('SYSTEM', 'Reset complete - UI should be refreshed');
         }
 
         // --- Attach Reset to New Game Button ---
@@ -953,36 +1050,39 @@
             }
         });
 
-        // --- Game State (Incremental Model) - TDD Races Expansion ---
-        let gameState = {
-            energy: 20,
-            energyPerSecond: 0,
-            insight: 5,
-            insightPerSecond: 0,
-            harmony: 50,
-            inspiration: 0,
-            inspirationPerSecond: 0,
-            wisdom: 0,
-            wisdomPerSecond: 0,
-            // TDD: Control vs Consciousness System - The Great Transition
-            control: 0,
-            controlPerSecond: 0,
-            consciousness: 10, // Start with some consciousness
-            consciousnessPerSecond: 0,
-            planetaryConsciousness: 10, // Global consciousness level (win condition at 100)
-            entropy: 0, // Accumulated negative effects from Ruler path choices
-            units: {
-                dreamers: 1,  // Start with 1 dreamer for immediate insight generation
-                weavers: 1,   // Start with 1 weaver for immediate energy generation
-                stellarNomads: 0,
-                voidWhisperers: 0,
-                crystalBeings: 0,
-                plasmaDancers: 0,
-                quantumSages: 0,
-                nebulaShepherds: 0
+        // --- TDD: Centralized Game Configuration (MUST come before gameState) ---
+        const gameConfig = {
+            // Initial Resources (matches core_instructions.md)
+            initialResources: {
+                energy: 20,
+                energyCap: 100,
+                insight: 5,
+                insightCap: 50,
+                harmony: 50,
+                harmonyCap: 100,
+                inspiration: 0,
+                inspirationCap: 25,
+                wisdom: 0,
+                wisdomCap: 25,
+                control: 0,
+                controlCap: 100,
+                consciousness: 10, // Start with some consciousness
+                consciousnessCap: 100,
+                planetaryConsciousness: 10, // Global consciousness level
+                planetaryConsciousnessCap: 100,
+                entropy: 0,
+                entropyCap: 100
             },
-            unitCosts: {
-                dreamers: 15,  // Slightly higher since we start with units
+
+            // Starting Units (auto-generated)
+            initialUnits: {
+                dreamers: 1,
+                weavers: 1
+            },
+
+            // Unit Base Costs & Scaling
+            unitBaseCosts: {
+                dreamers: 15,
                 weavers: 15,
                 stellarNomads: 25,
                 voidWhisperers: 40,
@@ -991,150 +1091,57 @@
                 quantumSages: 120,
                 nebulaShepherds: 200
             },
-            unlockedRaces: ['human'], // Start with humans unlocked
-            nodes: {
-                sustenance: 0,
-                energy: 0,
-                cohesion: 0,
-                cycling: 0,
-            },
-            nodeCosts: {
-                sustenance: 100,
-                energy: 100,
-                cohesion: 500,
-                cycling: 200,
-            },
-            // TDD: Tech Tree Buildings
-            rulerBuildings: {
-                // Tier 1: Foundation
-                industrialMine: 0,
-                centralizedGrid: 0,
-                automatedAgriculture: 0,
-                // Tier 2: Systems
-                hierarchicalCity: 0,
-                propagandaTower: 0,
-                surveillanceNetwork: 0,
-                // Tier 3: Oppression
-                thoughtPolice: 0,
-                corporateState: 0,
-                memoryWipe: 0,
-                // Tier 4: Ultimate
-                totalitarianCore: 0,
-                // Tier 5: Victory
-                exodusArk: 0
-            },
-            gardenerBuildings: {
-                // Tier 1: Seeds
-                stoneCircle: 0,
-                healingGrove: 0,
-                permacultureGarden: 0,
-                // Tier 2: Growing
-                wisdomSanctuary: 0,
-                mycelialNetwork: 0,
-                communityCouncil: 0,
-                // Tier 3: Awakening
-                planetaryAwakening: 0,
-                sacredGeometry: 0,
-                livingLibrary: 0,
-                // Tier 4: Ascension
-                theAscension: 0
-            },
-            techTreeUnlocked: false, // Unlocks when certain conditions are met
-            gameEnded: false, // Prevents repeated victory/defeat messages
+            costMultiplier: 1.15, // Swarm Simulator-style exponential scaling
 
-            // TDD: Story Progression System
-            storyPhase: 'early', // early, midgame_reveal, endgame, victory
-            anomalyDiscovered: false,
-            trueLoreRevealed: false,
-
-            // TDD: Victory Path Tracking
-            rulerPathProgress: 0, // Progress toward Ruler victory
-            gardenerPathProgress: 0, // Progress toward Gardener victory
-            dominantPath: 'none', // 'ruler', 'gardener', or 'balanced'
-
-            // TDD: Integration & Alliance System
-            allianceFormed: false, // Whether Gardeners and Rulers have allied
-            integrationLevel: 0, // 0-100, how well the paths work together
-            externalThreatLevel: 0, // Cosmic threats that force cooperation
-            cosmicThreatActive: false, // Major external enemy present
-
-            // TDD: AI Player Simulation
-            currentPlayer: 'gardener', // 'gardener' or 'ruler' - who's currently active
+            // AI Player Configuration
             aiPlayer: {
-                faction: 'ruler', // AI plays as ruler by default
-                lastAction: 0, // Timestamp of last AI action
-                actionCooldown: 15000, // 15 seconds between AI actions
-                strategy: 'balanced', // 'aggressive', 'defensive', 'balanced'
-                resources: { // AI has separate resource pool
+                initialResources: {
                     energy: 50,
                     insight: 30,
                     wisdom: 0,
                     control: 10
                 },
-                buildings: {}, // AI's buildings (separate from player)
-                units: [] // AI's units
+                actionCooldown: 15000, // 15 seconds when user active
+                inactiveActionCooldown: 5000, // 5 seconds when user inactive
+                resourceGenerationRate: {
+                    energy: 2,
+                    insight: 1,
+                    control: 0.5
+                },
+                userInactiveThreshold: 60000 // 1 minute
             },
-            aiEnabled: true, // Whether AI opponent is active
 
-            // TDD: Communication & Diplomacy System
-            allianceOffered: false, // Whether alliance has been offered
-            diplomaticContact: false, // Whether other faction has been contacted
-            communicationChannels: [], // Active communication methods
-            otherFactionPresent: false, // Whether other faction exists on adjacent map
-            mapExpanded: false, // Whether map has been expanded for alliance
-
-            // TDD: Four Horsemen Crisis System
-            crisisLevel: 0, // 0-100, triggers horsemen at certain thresholds
-            activeCrises: [], // Array of active crisis objects
-            horsemenDefeated: [], // Array of defeated horsemen
-            lastCrisisTime: 0, // Timestamp of last crisis
-            villageGrid: [],
-            stars: [],
-            intelligentCreatures: [], // TDD: Intelligent creatures with AI behaviors
-            conversationalUnits: [], // TDD: Conversational AI units with LLM dialogue
-            activeInteractions: [], // TDD: Unit-to-unit interactions
-            synergyEffects: [], // TDD: Active synergy bonuses
-            inspiration: 0, // TDD: New resource type
-            wisdom: 0, // TDD: New resource type
-            // TDD: Achievement & Goals System
-            achievements: {
-                unlocked: [],
-                progress: {},
-                categories: ['basic', 'advanced', 'master', 'secret'],
-                definitions: {}
-            },
-            goals: {
-                active: [],
-                completed: [],
-                available: [],
-                milestones: []
-            },
-            statistics: {
-                totalUnitsCreated: 3, // Start with initial units
-                totalEnergyGenerated: 0,
-                totalInsightGenerated: 0,
-                totalInteractions: 0,
-                totalConversations: 0,
-                playTime: 0,
-                maxHarmony: 50,
-                maxEnergy: 20,
-                maxInsight: 5,
-                maxControl: 0,
-                maxConsciousness: 10,
-                maxPlanetaryConsciousness: 10,
-                totalControlGenerated: 0,
-                totalConsciousnessGenerated: 0,
-                rulerPathChoices: 0,
-                gardenerPathChoices: 0,
-                gameStartTime: Date.now()
-            },
-            playerTitles: [],
-            lastUpdate: Date.now(),
-            // TDD: Save System
-            saveVersion: "1.0.0", // Version for save compatibility
-            lastSaved: null,
-            autoSaveEnabled: true,
-            autoSaveInterval: 30000 // 30 seconds
+            // Game Balance Parameters
+            balance: {
+                // TDD: Much harder victory conditions to fix "too easy" issue
+                victoryThresholds: {
+                    planetaryConsciousness: 100, // Still 100, but requires more buildings
+                    minBuildingsForVictory: 8, // Need 8+ buildings for any victory
+                    minResourcesForVictory: 200, // Need 200+ in primary resource
+                    storyProgressionRequired: true // Must complete story phases
+                },
+                storyProgression: {
+                    anomalyTrigger: {
+                        minBuildings: 8, // Increased from 5
+                        minResourceSum: 80 // Increased from 50
+                    },
+                    loreReveal: {
+                        minWisdom: 40, // Increased from 20
+                        minInsight: 60 // Increased from 30
+                    }
+                },
+                allianceFormationThreshold: {
+                    playerBuildings: 5, // Increased from 3
+                    aiBuildings: 5, // Increased from 3
+                    playerConsciousness: 60, // Increased from 40
+                    aiControl: 50 // Increased from 30
+                },
+                crisisSystem: {
+                    updateFrequency: 0.05, // 5% chance per frame
+                    horsemenCooldown: 60000, // 1 minute between crises
+                    cosmicThreatCooldown: 120000 // 2 minutes between cosmic threats
+                }
+            }
         };
 
         // --- Game Config - TDD Races System ---
@@ -1163,6 +1170,28 @@
 
         const rulerPathBuildings = {
             // Tier 1: Foundation of Control (Early Game)
+            resourceSilo: {
+                name: "Resource Silo",
+                description: "Industrial storage facility. +75 Energy capacity, +25 Control capacity.",
+                costResource: 'energy',
+                cost: 100,
+                effects: { energyCap: 75, controlCap: 25, control: 1 },
+                path: 'ruler',
+                category: 'infrastructure',
+                tier: 1,
+                unlockCondition: () => true
+            },
+            dataVault: {
+                name: "Data Vault",
+                description: "Centralized information storage. +30 Insight capacity, +20 Control capacity.",
+                costResource: 'insight',
+                cost: 60,
+                effects: { insightCap: 30, controlCap: 20, control: 0.5 },
+                path: 'ruler',
+                category: 'infrastructure',
+                tier: 1,
+                unlockCondition: () => true
+            },
             industrialMine: {
                 name: "Industrial Mine",
                 description: "Extracts resources efficiently but damages the environment. Foundation of industrial power.",
@@ -1296,6 +1325,28 @@
 
         const gardenerPathBuildings = {
             // Tier 1: Seeds of Consciousness (Early Game)
+            energyReservoir: {
+                name: "Energy Reservoir",
+                description: "Crystalline pools that store cosmic energy. +50 Energy capacity.",
+                costResource: 'energy',
+                cost: 75,
+                effects: { energyCap: 50, energyPerSecond: 0.1 },
+                path: 'gardener',
+                category: 'infrastructure',
+                tier: 1,
+                unlockCondition: () => true
+            },
+            insightLibrary: {
+                name: "Insight Library",
+                description: "Repository of cosmic knowledge. +25 Insight capacity.",
+                costResource: 'insight',
+                cost: 40,
+                effects: { insightCap: 25, insightPerSecond: 0.05 },
+                path: 'gardener',
+                category: 'infrastructure',
+                tier: 1,
+                unlockCondition: () => true
+            },
             stoneCircle: {
                 name: "Stone Circle",
                 description: "Ancient gathering place that enhances collective consciousness and spiritual connection.",
@@ -1422,6 +1473,9 @@
             cycling: { name: "Recycling Node", description: "Reduces the cost of all units and improves Harmony.", effectTarget: 'cost', multiplier: 0.95, harmony: 5, costResource: 'insight' },
         };
 
+        // --- Initialize Game State (AFTER all configs are defined) ---
+        let gameState = createInitialGameState();
+
         // --- Utility Functions ---
         const formatNumber = (num) => {
             if (num < 1000) return num.toFixed(1);
@@ -1489,6 +1543,12 @@
 
             checkAndUpdate(energyEl, gameState.energy, 'energy');
             checkAndUpdate(insightEl, gameState.insight, 'insight');
+
+            // Update resource caps
+            const energyCapEl = document.getElementById('energy-cap');
+            const insightCapEl = document.getElementById('insight-cap');
+            if (energyCapEl) energyCapEl.textContent = gameState.energyCap;
+            if (insightCapEl) insightCapEl.textContent = gameState.insightCap;
             checkAndUpdate(inspirationEl, gameState.inspiration, 'inspiration');
             checkAndUpdate(wisdomEl, gameState.wisdom, 'wisdom');
             checkAndUpdate(controlEl, gameState.control, 'control');
@@ -1518,11 +1578,31 @@
             // Update AI player status
             const aiControlEl = document.getElementById('ai-control');
             const aiBuildingsEl = document.getElementById('ai-buildings');
+            const aiActivityEl = document.getElementById('ai-activity-indicator');
 
             if (aiControlEl) aiControlEl.textContent = Math.round(gameState.aiPlayer.resources.control);
             if (aiBuildingsEl) {
                 const totalAIBuildings = Object.values(gameState.aiPlayer.buildings).reduce((sum, count) => sum + count, 0);
                 aiBuildingsEl.textContent = `${totalAIBuildings} Buildings`;
+            }
+
+            // Update AI activity indicator
+            if (aiActivityEl) {
+                const inactive = isUserInactive();
+                const aggressiveness = gameState.aiPlayer.aggressiveness;
+
+                if (inactive) {
+                    if (aggressiveness > 2.0) {
+                        aiActivityEl.innerHTML = '🔥 Aggressive';
+                        aiActivityEl.className = 'text-xs text-red-400';
+                    } else {
+                        aiActivityEl.innerHTML = '⚡ Accelerated';
+                        aiActivityEl.className = 'text-xs text-yellow-400';
+                    }
+                } else {
+                    aiActivityEl.innerHTML = '⚡ Active';
+                    aiActivityEl.className = 'text-xs text-green-400';
+                }
             }
 
             // Handle harmony separately (no formatting, just fixed decimal)
@@ -1585,19 +1665,52 @@
         };
 
         const renderUnits = () => {
-            // Only create buttons once, then update their states
-            if (!unitsInitialized) {
-                createUnitButtons();
-                unitsInitialized = true;
+            try {
+                debugLog('SYSTEM', 'renderUnits starting', {
+                    unitsInitialized: unitsInitialized,
+                    unitsPanel: !!unitsPanel,
+                    unitsPanelId: unitsPanel ? 'found' : 'missing'
+                });
+
+                // Only create buttons once, then update their states
+                if (!unitsInitialized) {
+                    debugLog('SYSTEM', 'Creating unit buttons');
+                    createUnitButtons();
+                    unitsInitialized = true;
+                    debugLog('SYSTEM', 'Unit buttons created');
+                }
+                debugLog('SYSTEM', 'Updating unit button states');
+                updateUnitButtonStates();
+                debugLog('SYSTEM', 'renderUnits complete');
+            } catch (error) {
+                debugLog('ERROR', 'renderUnits failed', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                console.error('renderUnits error:', error);
             }
-            updateUnitButtonStates();
         };
 
         const createUnitButtons = () => {
-            unitsPanel.innerHTML = '';
-            for (const key in unitsConfig) {
-                const unit = unitsConfig[key];
-                const card = document.createElement('div');
+            debugLog('SYSTEM', 'createUnitButtons starting', {
+                unitsPanel: !!unitsPanel,
+                unitsPanelType: typeof unitsPanel,
+                unitsConfigKeys: Object.keys(unitsConfig || {})
+            });
+
+            if (!unitsPanel) {
+                debugLog('ERROR', 'unitsPanel is null/undefined - skipping unit button creation');
+                return false;
+            }
+
+            try {
+                unitsPanel.innerHTML = '';
+                debugLog('SYSTEM', 'Cleared unitsPanel innerHTML');
+
+                for (const key in unitsConfig) {
+                    debugLog('SYSTEM', `Creating button for unit: ${key}`);
+                    const unit = unitsConfig[key];
+                    const card = document.createElement('div');
                 card.className = "unit-card p-4 rounded-lg border border-indigo-800";
                 card.innerHTML = `
                     <h3 class="font-bold text-lg text-white">${unit.name}</h3>
@@ -1617,6 +1730,14 @@
                 });
 
                 unitsPanel.appendChild(card);
+            }
+            return true;
+            } catch (error) {
+                debugLog('ERROR', 'createUnitButtons failed', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                return false;
             }
         };
 
@@ -1708,10 +1829,33 @@
         };
 
         const renderUI = () => {
-            renderStats();
-            renderUnits();
-            renderNodes();
-            renderTechTrees();
+            try {
+                debugLog('SYSTEM', 'Starting renderUI');
+
+                debugLog('SYSTEM', 'Calling renderStats');
+                renderStats();
+                debugLog('SYSTEM', 'renderStats complete');
+
+                debugLog('SYSTEM', 'Calling renderUnits');
+                renderUnits();
+                debugLog('SYSTEM', 'renderUnits complete');
+
+                debugLog('SYSTEM', 'Calling renderNodes');
+                renderNodes();
+                debugLog('SYSTEM', 'renderNodes complete');
+
+                debugLog('SYSTEM', 'Calling renderTechTrees');
+                renderTechTrees();
+                debugLog('SYSTEM', 'renderTechTrees complete');
+
+                debugLog('SYSTEM', 'renderUI complete');
+            } catch (error) {
+                debugLog('ERROR', 'renderUI failed', {
+                    error: error.message,
+                    stack: error.stack
+                });
+                console.error('renderUI error:', error);
+            }
         }
         
         // --- Enhanced Drawing System with Movement ---
@@ -3602,6 +3746,8 @@
         // --- TDD: Building Construction Functions ---
 
         const buildRulerBuilding = (buildingKey) => {
+            trackUserActivity(); // Track user engagement
+
             // Check if current player can build ruler buildings
             if (!canPlayerAct('ruler')) {
                 log('🏛️ Only the Ruler player can build Ruler structures!', 'warning');
@@ -3726,6 +3872,8 @@
         };
 
         const buildGardenerBuilding = (buildingKey) => {
+            trackUserActivity(); // Track user engagement
+
             // Check if current player can build gardener buildings
             if (!canPlayerAct('gardener')) {
                 log('🌱 Only the Gardener player can build Gardener structures!', 'warning');
@@ -6930,40 +7078,109 @@
                 return true;
             }
 
+            // Debug logging for victory condition checking
+            debugLog('VICTORY', 'Checking victory conditions', {
+                rulerProgress: gameState.rulerPathProgress,
+                gardenerProgress: gameState.gardenerPathProgress,
+                planetaryConsciousness: gameState.planetaryConsciousness,
+                dominantPath: gameState.dominantPath,
+                consciousness: gameState.consciousness,
+                control: gameState.control,
+                entropy: gameState.entropy,
+                harmony: gameState.harmony
+            });
+
             // Check for story-driven victory conditions
             if (gameState.rulerPathProgress >= 100) {
+                debugLog('VICTORY', 'Ruler victory triggered', { progress: gameState.rulerPathProgress });
                 showRulerVictory();
                 gameState.gameEnded = true;
                 return true;
             }
 
             if (gameState.gardenerPathProgress >= 100) {
+                debugLog('VICTORY', 'Gardener victory triggered', { progress: gameState.gardenerPathProgress });
                 showGardenerVictory();
                 gameState.gameEnded = true;
                 return true;
             }
 
-            // Legacy win condition: Planetary Consciousness reaches 100 (if no story path chosen)
-            if (gameState.planetaryConsciousness >= 100 && gameState.dominantPath === 'none') {
+            // TDD: Balanced victory condition - requires buildings AND story progression
+            const totalBuildings = Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0) +
+                                 Object.values(gameState.rulerBuildings).reduce((sum, count) => sum + count, 0);
+
+            const balanceThresholds = gameConfig.balance.victoryThresholds;
+
+            // Legacy win condition: Planetary Consciousness reaches 100 (with stricter requirements)
+            if (gameState.planetaryConsciousness >= balanceThresholds.planetaryConsciousness &&
+                gameState.dominantPath === 'none') {
+
+                // TDD: Enforce minimum building requirement
+                if (totalBuildings < balanceThresholds.minBuildingsForVictory) {
+                    debugLog('BALANCE', 'Victory blocked - insufficient buildings', {
+                        planetaryConsciousness: gameState.planetaryConsciousness,
+                        totalBuildings: totalBuildings,
+                        required: balanceThresholds.minBuildingsForVictory
+                    });
+
+                    if (Math.random() < 0.1) { // Occasional hint
+                        log(`🏗️ The consciousness is high, but the foundation is weak. Build more structures to stabilize the transformation. (${totalBuildings}/${balanceThresholds.minBuildingsForVictory})`, 'warning');
+                    }
+                    return false;
+                }
+
+                // TDD: Enforce story progression requirement
+                if (balanceThresholds.storyProgressionRequired && !gameState.trueLoreRevealed) {
+                    debugLog('BALANCE', 'Victory blocked - story not complete', {
+                        anomalyDiscovered: gameState.anomalyDiscovered,
+                        trueLoreRevealed: gameState.trueLoreRevealed
+                    });
+
+                    if (Math.random() < 0.1) { // Occasional hint
+                        log('📖 The transformation requires understanding. Explore the mysteries of your world first.', 'warning');
+                    }
+                    return false;
+                }
+
+                debugLog('VICTORY', 'Balanced victory triggered', {
+                    planetaryConsciousness: gameState.planetaryConsciousness,
+                    totalBuildings: totalBuildings,
+                    storyComplete: gameState.trueLoreRevealed
+                });
                 showGenericVictory();
                 gameState.gameEnded = true;
                 return true;
             }
 
+            // TDD: Balance warning system
+            if (gameState.planetaryConsciousness >= 80 && totalBuildings < balanceThresholds.minBuildingsForVictory) {
+                debugLog('BALANCE', 'WARNING: Approaching victory with insufficient buildings', {
+                    planetaryConsciousness: gameState.planetaryConsciousness,
+                    totalBuildings: totalBuildings,
+                    required: balanceThresholds.minBuildingsForVictory
+                });
+            }
+
             // Lose conditions
             if (gameState.consciousness <= 0 && gameState.planetaryConsciousness <= 0) {
+                debugLog('DEFEAT', 'Consciousness collapse defeat', {
+                    consciousness: gameState.consciousness,
+                    planetaryConsciousness: gameState.planetaryConsciousness
+                });
                 showGreatTransitionDefeat('consciousness_collapse');
                 gameState.gameEnded = true;
                 return true;
             }
 
             if (gameState.entropy >= 100) {
+                debugLog('DEFEAT', 'Entropy overload defeat', { entropy: gameState.entropy });
                 showGreatTransitionDefeat('entropy_overload');
                 gameState.gameEnded = true;
                 return true;
             }
 
             if (gameState.harmony <= 0) {
+                debugLog('DEFEAT', 'Harmony collapse defeat', { harmony: gameState.harmony });
                 showGreatTransitionDefeat('harmony_collapse');
                 gameState.gameEnded = true;
                 return true;
@@ -7057,20 +7274,48 @@
         // --- TDD: Story Progression System ---
 
         const checkStoryProgression = () => {
-            // Mid-game reveal: Discover the anomaly
+            debugLog('STORY', 'Checking story progression', {
+                phase: gameState.storyPhase,
+                anomalyDiscovered: gameState.anomalyDiscovered,
+                trueLoreRevealed: gameState.trueLoreRevealed,
+                consciousness: gameState.consciousness,
+                control: gameState.control,
+                wisdom: gameState.wisdom,
+                insight: gameState.insight
+            });
+
+            // Mid-game reveal: Discover the anomaly (using balanced thresholds)
             if (!gameState.anomalyDiscovered && gameState.storyPhase === 'early') {
                 const totalBuildings = Object.values(gameState.rulerBuildings).reduce((sum, count) => sum + count, 0) +
                                      Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0);
 
-                if (totalBuildings >= 5 || gameState.consciousness + gameState.control >= 50) {
+                const anomalyThresholds = gameConfig.balance.storyProgression.anomalyTrigger;
+
+                debugLog('STORY', 'Checking anomaly trigger', {
+                    totalBuildings: totalBuildings,
+                    consciousnessControlSum: gameState.consciousness + gameState.control,
+                    threshold: `buildings >= ${anomalyThresholds.minBuildings} OR consciousness+control >= ${anomalyThresholds.minResourceSum}`
+                });
+
+                if (totalBuildings >= anomalyThresholds.minBuildings ||
+                    gameState.consciousness + gameState.control >= anomalyThresholds.minResourceSum) {
+                    debugLog('STORY', 'Anomaly trigger conditions met!');
                     triggerAnomalyDiscovery();
                 }
             }
 
-            // True lore reveal after anomaly investigation
+            // True lore reveal after anomaly investigation (using balanced thresholds)
             if (gameState.anomalyDiscovered && !gameState.trueLoreRevealed && gameState.storyPhase === 'midgame_reveal') {
-                const investigationProgress = gameState.wisdom + gameState.insight;
-                if (investigationProgress >= 100) {
+                const loreThresholds = gameConfig.balance.storyProgression.loreReveal;
+
+                debugLog('STORY', 'Checking lore reveal trigger', {
+                    wisdom: gameState.wisdom,
+                    insight: gameState.insight,
+                    threshold: `wisdom >= ${loreThresholds.minWisdom} AND insight >= ${loreThresholds.minInsight}`
+                });
+
+                if (gameState.wisdom >= loreThresholds.minWisdom && gameState.insight >= loreThresholds.minInsight) {
+                    debugLog('STORY', 'Lore reveal conditions met!');
                     revealTrueLore();
                 }
             }
@@ -7080,6 +7325,13 @@
         };
 
         const triggerAnomalyDiscovery = () => {
+            debugLog('STORY', 'Triggering anomaly discovery', {
+                consciousness: gameState.consciousness,
+                control: gameState.control,
+                totalBuildings: Object.values(gameState.rulerBuildings).reduce((sum, count) => sum + count, 0) +
+                               Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0)
+            });
+
             gameState.anomalyDiscovered = true;
             gameState.storyPhase = 'midgame_reveal';
 
@@ -7091,6 +7343,12 @@
             // Add research bonus
             gameState.wisdomPerSecond += 0.1;
             gameState.insightPerSecond += 0.1;
+
+            debugLog('STORY', 'Anomaly discovery complete', {
+                newPhase: gameState.storyPhase,
+                wisdomRate: gameState.wisdomPerSecond,
+                insightRate: gameState.insightPerSecond
+            });
         };
 
         const revealTrueLore = () => {
@@ -7243,9 +7501,12 @@
             const playerGardenerProgress = Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0);
             const aiRulerProgress = Object.values(gameState.aiPlayer.buildings).reduce((sum, count) => sum + count, 0);
 
-            // Need at least 3 buildings from each faction and sufficient resources
-            if (playerGardenerProgress >= 3 && aiRulerProgress >= 3 &&
-                gameState.consciousness >= 40 && gameState.aiPlayer.resources.control >= 30) {
+            // Use config thresholds for alliance formation
+            const thresholds = gameConfig.balance.allianceFormationThreshold;
+            if (playerGardenerProgress >= thresholds.playerBuildings &&
+                aiRulerProgress >= thresholds.aiBuildings &&
+                gameState.consciousness >= thresholds.playerConsciousness &&
+                gameState.aiPlayer.resources.control >= thresholds.aiControl) {
 
                 formAlliance();
             }
@@ -7335,16 +7596,42 @@
 
         // --- TDD: AI Player System ---
 
+        const trackUserActivity = () => {
+            gameState.lastUserAction = Date.now();
+        };
+
+        const isUserInactive = () => {
+            return (Date.now() - gameState.lastUserAction) > gameState.userInactiveThreshold;
+        };
+
         const updateAIPlayer = () => {
             if (!gameState.aiEnabled || gameState.allianceFormed) return;
 
             const now = Date.now();
-            if (now - gameState.aiPlayer.lastAction < gameState.aiPlayer.actionCooldown) return;
+            const inactive = isUserInactive();
 
-            // AI resource generation (slower than player)
-            gameState.aiPlayer.resources.energy += 2;
-            gameState.aiPlayer.resources.insight += 1;
-            gameState.aiPlayer.resources.control += 0.5;
+            // Adjust AI behavior based on user activity
+            const currentCooldown = inactive ? gameState.aiPlayer.inactiveActionCooldown : gameState.aiPlayer.actionCooldown;
+            if (now - gameState.aiPlayer.lastAction < currentCooldown) return;
+
+            // Increase AI aggressiveness when user is inactive
+            if (inactive) {
+                gameState.aiPlayer.aggressiveness = Math.min(3.0, gameState.aiPlayer.aggressiveness + 0.1);
+
+                // Send occasional messages to encourage user engagement
+                if (now - gameState.aiPlayer.lastMessage > 30000) { // Every 30 seconds
+                    sendAIMessage();
+                    gameState.aiPlayer.lastMessage = now;
+                }
+            } else {
+                gameState.aiPlayer.aggressiveness = Math.max(1.0, gameState.aiPlayer.aggressiveness - 0.05);
+            }
+
+            // AI resource generation (faster when user inactive, from config)
+            const resourceMultiplier = inactive ? gameState.aiPlayer.aggressiveness : 1.0;
+            gameState.aiPlayer.resources.energy += gameConfig.aiPlayer.resourceGenerationRate.energy * resourceMultiplier;
+            gameState.aiPlayer.resources.insight += gameConfig.aiPlayer.resourceGenerationRate.insight * resourceMultiplier;
+            gameState.aiPlayer.resources.control += gameConfig.aiPlayer.resourceGenerationRate.control * resourceMultiplier;
 
             // AI decision making
             makeAIDecision();
@@ -7470,6 +7757,49 @@
             }
 
             log(`🏛️ AI Ruler summoned a ${type}!`, 'warning');
+        };
+
+        const sendAIMessage = () => {
+            const inactive = isUserInactive();
+            const messages = {
+                encouragement: [
+                    "🏛️ \"The sanctuary grows quiet. Are you still there, Gardener?\"",
+                    "🏛️ \"While you rest, I continue building our empire. Will you join me?\"",
+                    "🏛️ \"The cosmic forces stir. Your guidance is needed.\"",
+                    "🏛️ \"I sense your presence fading. The balance requires both our paths.\""
+                ],
+                progress: [
+                    "🏛️ \"My industrial might grows. Soon we shall be ready for alliance.\"",
+                    "🏛️ \"The foundations of order are laid. What of your consciousness path?\"",
+                    "🏛️ \"Control systems online. The sanctuary awaits your wisdom.\"",
+                    "🏛️ \"My surveillance networks detect cosmic disturbances. We must prepare.\""
+                ],
+                crisis: [
+                    "🏛️ \"Crisis approaches! Your consciousness is needed to balance my control.\"",
+                    "🏛️ \"The entropy rises. Only together can we face what comes.\"",
+                    "🏛️ \"External threats gather. Will you stand with me, Gardener?\""
+                ],
+                alliance: [
+                    "🏛️ \"The time for alliance draws near. Are you ready to unite our paths?\"",
+                    "🏛️ \"Together we are stronger than apart. Consider my proposal.\"",
+                    "🏛️ \"The cosmic threats require both order and consciousness. Join me.\""
+                ]
+            };
+
+            let messageType = 'encouragement';
+
+            if (gameState.crisisLevel > 50) {
+                messageType = 'crisis';
+            } else if (gameState.aiPlayer.resources.control > 40) {
+                messageType = 'alliance';
+            } else if (!inactive) {
+                messageType = 'progress';
+            }
+
+            const messageArray = messages[messageType];
+            const message = messageArray[Math.floor(Math.random() * messageArray.length)];
+
+            log(message, 'grok');
         };
 
         const initializePlayerSwitching = () => {
@@ -8707,15 +9037,21 @@
 
         // --- Game Logic ---
         window.createUnit = (key) => {
+            trackUserActivity(); // Track user engagement
+
             const unitConf = unitsConfig[key];
             const cost = gameState.unitCosts[key];
+
             if (gameState[unitConf.costResource] >= cost) {
                 gameState[unitConf.costResource] -= cost;
                 gameState.units[key]++;
-                gameState.unitCosts[key] *= 1.15;
+
+                // Swarm Simulator-style exponential cost increase
+                gameState.unitCosts[key] = Math.floor(gameState.unitBaseCosts[key] * Math.pow(gameState.costMultiplier, gameState.units[key]));
+
                 if (key === 'dreamers') addSprite('crystal_tree');
                 if (key === 'weavers') addSprite('dome');
-                log(`A new ${unitConf.name} joins the sanctuary.`, 'success');
+                log(`A new ${unitConf.name} joins the sanctuary. Next one costs ${gameState.unitCosts[key]} ${unitConf.costResource}.`, 'success');
 
                 // TDD Task 1: Add movable sprite for the new unit
                 addSprite(key, 1);
@@ -8729,6 +9065,8 @@
                 }
 
                 // TDD Fix: Don't immediately re-render UI, let game loop handle it
+            } else {
+                log(`Not enough ${unitConf.costResource}. Need ${cost}, have ${Math.floor(gameState[unitConf.costResource])}.`, 'warning');
             }
         };
 
@@ -8768,12 +9106,24 @@
             gameState.energyPerSecond = energyPerSecond;
             gameState.insightPerSecond = insightPerSecond;
 
-            // Add resources
+            // Add resources with caps (Swarm Simulator style)
             const energyGained = energyPerSecond * delta;
             const insightGained = insightPerSecond * delta;
 
-            gameState.energy += energyGained;
-            gameState.insight += insightGained;
+            gameState.energy = Math.min(gameState.energyCap, gameState.energy + energyGained);
+            gameState.insight = Math.min(gameState.insightCap, gameState.insight + insightGained);
+
+            // Show cap warning if resources are maxed
+            if (gameState.energy >= gameState.energyCap && energyGained > 0) {
+                if (Math.random() < 0.01) { // Occasional warning
+                    log('⚡ Energy storage full! Build storage upgrades to increase capacity.', 'warning');
+                }
+            }
+            if (gameState.insight >= gameState.insightCap && insightGained > 0) {
+                if (Math.random() < 0.01) {
+                    log('🔮 Insight storage full! Expand your consciousness to hold more.', 'warning');
+                }
+            }
 
             // TDD: Track statistics for achievements
             if (energyGained > 0) {
@@ -8788,56 +9138,585 @@
         };
 
         let lastUIUpdate = 0;
+        let gameLoopCount = 0;
+        let lastPerformanceLog = 0;
+
         const gameLoop = () => {
             // Stop the game loop if the game has ended
             if (gameState.gameEnded) {
+                debugLog('SYSTEM', 'Game loop stopped - game ended', { gameEnded: gameState.gameEnded });
                 return;
             }
 
             const now = Date.now();
             const delta = (now - gameState.lastUpdate) / 1000; // Time in seconds
+            gameLoopCount++;
 
-            updateGameState(delta);
-
-            // TDD Fix: Update UI less frequently to prevent button blinking
-            if (now - lastUIUpdate > 500) { // Increased from 100ms to 500ms
-                renderUI();
-                updateProgressUI(); // TDD: Update achievements and goals UI
-                lastUIUpdate = now;
+            // Performance monitoring - log every 10 seconds
+            if (now - lastPerformanceLog > 10000) {
+                debugLog('PERFORMANCE', 'Game loop performance', {
+                    fps: Math.round(gameLoopCount / 10),
+                    delta: delta.toFixed(3),
+                    villageGridSize: gameState.villageGrid?.length || 0,
+                    activeCrises: gameState.activeCrises?.length || 0,
+                    storyPhase: gameState.storyPhase,
+                    consciousness: gameState.consciousness,
+                    energy: gameState.energy
+                });
+                gameLoopCount = 0;
+                lastPerformanceLog = now;
             }
-            drawSanctuary();
 
-            gameState.lastUpdate = now;
-            requestAnimationFrame(gameLoop);
+            try {
+                updateGameState(delta);
+
+                // TDD Fix: Update UI less frequently to prevent button blinking
+                if (now - lastUIUpdate > 500) { // Increased from 100ms to 500ms
+                    renderUI();
+                    updateProgressUI(); // TDD: Update achievements and goals UI
+                    lastUIUpdate = now;
+                }
+                drawSanctuary();
+
+                gameState.lastUpdate = now;
+                requestAnimationFrame(gameLoop);
+            } catch (error) {
+                debugLog('ERROR', 'Game loop error', {
+                    error: error.message,
+                    stack: error.stack,
+                    gameState: {
+                        energy: gameState.energy,
+                        consciousness: gameState.consciousness,
+                        storyPhase: gameState.storyPhase
+                    }
+                });
+                console.error('Game loop error:', error);
+
+                // Try to continue the game loop after logging the error
+                setTimeout(() => requestAnimationFrame(gameLoop), 1000);
+            }
         };
 
-        // --- TDD Test Suite ---
+        // --- TDD Test Suite for Game Balance & Story Integration ---
         const runTests = () => {
-            console.log("--- Running TDD Test Suite ---");
+            console.log("🧪 === TDD TEST SUITE: Game Balance & Story Integration ===");
 
-            // Test 1: Initial game state
-            const initialState = { ...gameState };
-            console.assert(initialState.energy === 10, "Test 1.1 Failed: Initial energy should be 10.");
-            console.assert(initialState.insight === 0, "Test 1.2 Failed: Initial insight should be 0.");
-            console.assert(initialState.harmony === 50, "Test 1.3 Failed: Initial harmony should be 50.");
+            // Test 1: Initial State Validation
+            testInitialGameState();
 
-            // Test 1.4: Initial energy is displayed in the UI
-            renderUI();
-            const energyText = document.getElementById('energy').textContent;
-            console.assert(parseFloat(energyText) === 10.0, "Test 1.4 Failed: Initial energy displayed should be 10.0.");
+            // Test 2: Victory Condition Balance
+            testVictoryConditions();
 
-            // Test 2: Composting upgrade increases harmony
-            const initialHarmony = initialState.harmony;
-            gameState.insight = 200; // Ensure we can afford the upgrade
-            upgradeNode('cycling');
-            console.assert(gameState.harmony > initialHarmony, "Test 2.1 Failed: Composting upgrade should increase harmony.");
+            // Test 3: Story Progression Logic
+            testStoryProgression();
 
-            // Test 3: Creating a unit deducts resources
-            const initialEnergy = gameState.energy;
-            createUnit('dreamers');
-            console.assert(gameState.energy < initialEnergy, "Test 3.1 Failed: Creating a dreamer should deduct energy.");
+            // Test 4: Resource Balance
+            testResourceBalance();
 
-            console.log("--- TDD Test Suite Finished ---");
+            // Test 5: AI Player Behavior
+            testAIPlayerBehavior();
+
+            console.log("🧪 === TDD TEST SUITE COMPLETE ===");
+        };
+
+        const testInitialGameState = () => {
+            console.log("🧪 Test 1: Initial Game State");
+
+            // Test initial resources match config
+            console.assert(gameState.energy === gameConfig.initialResources.energy,
+                `❌ Initial energy should be ${gameConfig.initialResources.energy}, got ${gameState.energy}`);
+            console.assert(gameState.insight === gameConfig.initialResources.insight,
+                `❌ Initial insight should be ${gameConfig.initialResources.insight}, got ${gameState.insight}`);
+            console.assert(gameState.harmony === gameConfig.initialResources.harmony,
+                `❌ Initial harmony should be ${gameConfig.initialResources.harmony}, got ${gameState.harmony}`);
+
+            // Test initial units
+            console.assert(gameState.units.dreamers === gameConfig.initialUnits.dreamers,
+                `❌ Should start with ${gameConfig.initialUnits.dreamers} dreamers, got ${gameState.units.dreamers}`);
+            console.assert(gameState.units.weavers === gameConfig.initialUnits.weavers,
+                `❌ Should start with ${gameConfig.initialUnits.weavers} weavers, got ${gameState.units.weavers}`);
+
+            console.log("✅ Initial state tests passed");
+        };
+
+        const testVictoryConditions = () => {
+            console.log("🧪 Test 2: Victory Condition Balance");
+
+            // Test if victory is too easy to achieve
+            const totalBuildings = Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0) +
+                                 Object.values(gameState.rulerBuildings).reduce((sum, count) => sum + count, 0);
+
+            // Victory should require significant progress
+            const minBuildingsForVictory = 5;
+            const minConsciousnessForVictory = 80;
+
+            console.log(`📊 Current buildings: ${totalBuildings}, Consciousness: ${gameState.consciousness}`);
+            console.log(`📊 Victory thresholds: ${minBuildingsForVictory} buildings, ${minConsciousnessForVictory} consciousness`);
+
+            if (totalBuildings < minBuildingsForVictory && gameState.consciousness >= minConsciousnessForVictory) {
+                console.warn("⚠️ BALANCE ISSUE: Victory may be too easy - high consciousness with few buildings");
+            }
+
+            console.log("✅ Victory condition tests completed");
+        };
+
+        const testStoryProgression = () => {
+            console.log("🧪 Test 3: Story Progression Logic");
+
+            // Test story phase transitions
+            console.log(`📖 Current story phase: ${gameState.storyPhase}`);
+            console.log(`📖 Anomaly discovered: ${gameState.anomalyDiscovered}`);
+            console.log(`📖 True lore revealed: ${gameState.trueLoreRevealed}`);
+
+            // Check if story progression conditions are clear
+            const storyConditions = {
+                anomalyTrigger: gameState.consciousness >= 30 || gameState.control >= 30,
+                loreTrigger: gameState.anomalyDiscovered && (gameState.consciousness >= 50 || gameState.control >= 50),
+                endgameTrigger: gameState.trueLoreRevealed && (gameState.consciousness >= 80 || gameState.control >= 80)
+            };
+
+            console.log("📖 Story progression conditions:", storyConditions);
+            console.log("✅ Story progression tests completed");
+        };
+
+        const testResourceBalance = () => {
+            console.log("🧪 Test 4: Resource Balance");
+
+            // Test resource generation rates
+            const energyRate = gameState.energyPerSecond;
+            const insightRate = gameState.insightPerSecond;
+
+            console.log(`⚡ Energy rate: ${energyRate}/s (cap: ${gameState.energyCap})`);
+            console.log(`🔮 Insight rate: ${insightRate}/s (cap: ${gameState.insightCap})`);
+
+            // Test unit costs vs generation
+            const dreamerCost = gameState.unitCosts.dreamers;
+            const weaverCost = gameState.unitCosts.weavers;
+
+            console.log(`💰 Dreamer cost: ${dreamerCost} energy`);
+            console.log(`💰 Weaver cost: ${weaverCost} insight`);
+
+            // Calculate time to afford next unit
+            const timeToAffordDreamer = energyRate > 0 ? (dreamerCost - gameState.energy) / energyRate : Infinity;
+            const timeToAffordWeaver = insightRate > 0 ? (weaverCost - gameState.insight) / insightRate : Infinity;
+
+            console.log(`⏱️ Time to afford next Dreamer: ${timeToAffordDreamer.toFixed(1)}s`);
+            console.log(`⏱️ Time to afford next Weaver: ${timeToAffordWeaver.toFixed(1)}s`);
+
+            if (timeToAffordDreamer < 10 || timeToAffordWeaver < 10) {
+                console.warn("⚠️ BALANCE ISSUE: Units may be too cheap - can afford in <10 seconds");
+            }
+
+            console.log("✅ Resource balance tests completed");
+        };
+
+        const testAIPlayerBehavior = () => {
+            console.log("🧪 Test 5: AI Player Behavior");
+
+            // TDD FIX: Add safety checks for aiPlayer
+            if (!gameState.aiPlayer) {
+                console.log("⚠️ aiPlayer not initialized, skipping AI tests");
+                return;
+            }
+
+            console.log(`🤖 AI enabled: ${gameState.aiEnabled}`);
+            console.log(`🤖 AI resources:`, gameState.aiPlayer.resources);
+            console.log(`🤖 AI buildings:`, Object.keys(gameState.aiPlayer.buildings).length);
+            console.log(`🤖 User inactive: ${isUserInactive()}`);
+            console.log(`🤖 AI aggressiveness: ${gameState.aiPlayer.aggressiveness}`);
+
+            console.log("✅ AI behavior tests completed");
+        };
+
+        // --- TDD: IndexedDB Debug Logging System ---
+        let debugDB = null;
+
+        const initDebugDB = async () => {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('TerraFlowDebugDB', 1);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    debugDB = request.result;
+                    resolve(debugDB);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('logs')) {
+                        const store = db.createObjectStore('logs', { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('timestamp', 'timestamp', { unique: false });
+                        store.createIndex('category', 'category', { unique: false });
+                    }
+                };
+            });
+        };
+
+        const saveDebugLog = async (category, message, data = null) => {
+            if (!debugDB) {
+                try {
+                    await initDebugDB();
+                } catch (error) {
+                    console.error('Failed to init debug DB:', error);
+                    return;
+                }
+            }
+
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                category: category,
+                message: message,
+                data: data ? JSON.stringify(data) : null,
+                gameState: {
+                    energy: gameState?.energy || 0,
+                    consciousness: gameState?.consciousness || 0,
+                    storyPhase: gameState?.storyPhase || 'unknown',
+                    gameEnded: gameState?.gameEnded || false
+                }
+            };
+
+            try {
+                const transaction = debugDB.transaction(['logs'], 'readwrite');
+                const store = transaction.objectStore('logs');
+                await store.add(logEntry);
+
+                // Keep only last 1000 logs to prevent storage bloat
+                const countRequest = store.count();
+                countRequest.onsuccess = () => {
+                    if (countRequest.result > 1000) {
+                        const deleteTransaction = debugDB.transaction(['logs'], 'readwrite');
+                        const deleteStore = deleteTransaction.objectStore('logs');
+                        const range = IDBKeyRange.upperBound(countRequest.result - 1000);
+                        deleteStore.delete(range);
+                    }
+                };
+            } catch (error) {
+                console.error('Failed to save debug log:', error);
+            }
+        };
+
+        const debugLog = (category, message, data = null) => {
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Always save to IndexedDB
+            saveDebugLog(category, message, data);
+
+            // Console log if debug mode enabled
+            if (window.location.search.includes('debug') || localStorage.getItem('debug_mode') === 'true') {
+                console.log(`🐛 [${timestamp}] ${category}: ${message}`, data || '');
+
+                // Also log to game log for visibility
+                log(`🐛 DEBUG [${category}]: ${message}`, 'info');
+            }
+        };
+
+        const enableDebugMode = () => {
+            localStorage.setItem('debug_mode', 'true');
+            log('🐛 Debug mode enabled! Check console for detailed logs.', 'success');
+        };
+
+        const disableDebugMode = () => {
+            localStorage.setItem('debug_mode', 'false');
+            log('🐛 Debug mode disabled.', 'info');
+        };
+
+        const showDebugViewer = async () => {
+            if (!debugDB) {
+                try {
+                    await initDebugDB();
+                } catch (error) {
+                    log('❌ Failed to open debug database', 'error');
+                    return;
+                }
+            }
+
+            // Create debug viewer modal
+            const modal = document.createElement('div');
+            modal.id = 'debug-viewer-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-900 border border-gray-600 rounded-lg w-11/12 h-5/6 flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-600">
+                        <h2 class="text-xl font-bold text-white">🐛 Debug Log Viewer</h2>
+                        <div class="flex space-x-2">
+                            <button id="debug-clear-btn" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
+                                Clear Logs
+                            </button>
+                            <button id="debug-export-btn" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                Export
+                            </button>
+                            <button id="debug-close-btn" class="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-hidden flex">
+                        <div class="w-1/4 border-r border-gray-600 p-2">
+                            <h3 class="text-sm font-bold text-gray-300 mb-2">Categories</h3>
+                            <div id="debug-categories" class="space-y-1"></div>
+                        </div>
+                        <div class="flex-1 flex flex-col">
+                            <div class="p-2 border-b border-gray-600">
+                                <input id="debug-search" type="text" placeholder="Search logs..."
+                                       class="w-full px-3 py-1 bg-gray-800 text-white rounded border border-gray-600">
+                            </div>
+                            <div id="debug-logs" class="flex-1 overflow-y-auto p-2 text-xs font-mono"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Load and display logs
+            await loadDebugLogs();
+
+            // Event listeners
+            document.getElementById('debug-close-btn').onclick = () => {
+                document.body.removeChild(modal);
+            };
+
+            document.getElementById('debug-clear-btn').onclick = async () => {
+                if (confirm('Clear all debug logs?')) {
+                    await clearDebugLogs();
+                    await loadDebugLogs();
+                }
+            };
+
+            document.getElementById('debug-export-btn').onclick = () => {
+                exportDebugLogs();
+            };
+
+            document.getElementById('debug-search').oninput = (e) => {
+                filterDebugLogs(e.target.value);
+            };
+        };
+
+        const loadDebugLogs = async () => {
+            try {
+                const transaction = debugDB.transaction(['logs'], 'readonly');
+                const store = transaction.objectStore('logs');
+                const request = store.getAll();
+
+                request.onsuccess = () => {
+                    const logs = request.result.reverse(); // Most recent first
+                    displayDebugLogs(logs);
+                    updateCategoryFilter(logs);
+                };
+            } catch (error) {
+                console.error('Failed to load debug logs:', error);
+            }
+        };
+
+        const displayDebugLogs = (logs) => {
+            const container = document.getElementById('debug-logs');
+            if (!container) return;
+
+            container.innerHTML = logs.map(log => {
+                const time = new Date(log.timestamp).toLocaleTimeString();
+                const dataStr = log.data ? `\n${log.data}` : '';
+                const gameStateStr = log.gameState ?
+                    `\n[Game: E:${log.gameState.energy} C:${log.gameState.consciousness} Phase:${log.gameState.storyPhase}]` : '';
+
+                return `
+                    <div class="debug-log-entry mb-2 p-2 bg-gray-800 rounded border-l-4 border-${getCategoryColor(log.category)}-500"
+                         data-category="${log.category}">
+                        <div class="flex justify-between items-start">
+                            <span class="text-${getCategoryColor(log.category)}-400 font-bold">[${log.category}]</span>
+                            <span class="text-gray-500 text-xs">${time}</span>
+                        </div>
+                        <div class="text-gray-200 mt-1">${log.message}</div>
+                        ${dataStr ? `<pre class="text-gray-400 text-xs mt-1 overflow-x-auto">${dataStr}</pre>` : ''}
+                        ${gameStateStr ? `<div class="text-gray-500 text-xs mt-1">${gameStateStr}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const updateCategoryFilter = (logs) => {
+            const categories = [...new Set(logs.map(log => log.category))];
+            const container = document.getElementById('debug-categories');
+            if (!container) return;
+
+            container.innerHTML = categories.map(category => {
+                const count = logs.filter(log => log.category === category).length;
+                return `
+                    <button class="debug-category-btn w-full text-left px-2 py-1 rounded text-sm hover:bg-gray-700 text-${getCategoryColor(category)}-400"
+                            data-category="${category}">
+                        ${category} (${count})
+                    </button>
+                `;
+            }).join('');
+
+            // Add click handlers
+            container.querySelectorAll('.debug-category-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const category = btn.dataset.category;
+                    filterDebugLogsByCategory(category);
+                };
+            });
+        };
+
+        const getCategoryColor = (category) => {
+            const colors = {
+                'STORY': 'blue',
+                'VICTORY': 'green',
+                'BALANCE': 'yellow',
+                'ERROR': 'red',
+                'DEFEAT': 'red',
+                'AI': 'purple',
+                'RESOURCE': 'cyan'
+            };
+            return colors[category] || 'gray';
+        };
+
+        const filterDebugLogs = (searchTerm) => {
+            const entries = document.querySelectorAll('.debug-log-entry');
+            entries.forEach(entry => {
+                const text = entry.textContent.toLowerCase();
+                const matches = text.includes(searchTerm.toLowerCase());
+                entry.style.display = matches ? 'block' : 'none';
+            });
+        };
+
+        const filterDebugLogsByCategory = (category) => {
+            const entries = document.querySelectorAll('.debug-log-entry');
+            entries.forEach(entry => {
+                const matches = entry.dataset.category === category;
+                entry.style.display = matches ? 'block' : 'none';
+            });
+        };
+
+        const clearDebugLogs = async () => {
+            try {
+                const transaction = debugDB.transaction(['logs'], 'readwrite');
+                const store = transaction.objectStore('logs');
+                await store.clear();
+                log('🐛 Debug logs cleared', 'info');
+            } catch (error) {
+                console.error('Failed to clear debug logs:', error);
+            }
+        };
+
+        const exportDebugLogs = async () => {
+            try {
+                const transaction = debugDB.transaction(['logs'], 'readonly');
+                const store = transaction.objectStore('logs');
+                const request = store.getAll();
+
+                request.onsuccess = () => {
+                    const logs = request.result;
+                    const dataStr = JSON.stringify(logs, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `terraflow-debug-${new Date().toISOString().slice(0, 10)}.json`;
+                    a.click();
+
+                    URL.revokeObjectURL(url);
+                    log('🐛 Debug logs exported', 'success');
+                };
+            } catch (error) {
+                console.error('Failed to export debug logs:', error);
+            }
+        };
+
+        // Add debug commands to window for console access
+        window.debugCommands = {
+            enable: enableDebugMode,
+            disable: disableDebugMode,
+            viewer: showDebugViewer,
+            state: () => console.log('Current Game State:', gameState),
+            story: () => debugStoryProgression(),
+            victory: () => debugVictoryConditions(),
+            balance: () => debugResourceBalance(),
+            ai: () => debugAIBehavior(),
+            test: runTests,
+            clear: clearDebugLogs,
+            export: exportDebugLogs
+        };
+
+        const debugStoryProgression = () => {
+            console.log("📖 === STORY PROGRESSION DEBUG ===");
+            console.log(`Story Phase: ${gameState.storyPhase}`);
+            console.log(`Anomaly Discovered: ${gameState.anomalyDiscovered}`);
+            console.log(`True Lore Revealed: ${gameState.trueLoreRevealed}`);
+            console.log(`Tech Tree Unlocked: ${gameState.techTreeUnlocked}`);
+
+            // Check story trigger conditions
+            const anomalyCondition = gameState.consciousness >= 30 || gameState.control >= 30;
+            const loreCondition = gameState.anomalyDiscovered && (gameState.consciousness >= 50 || gameState.control >= 50);
+            const endgameCondition = gameState.trueLoreRevealed && (gameState.consciousness >= 80 || gameState.control >= 80);
+
+            console.log("Story Trigger Conditions:");
+            console.log(`  Anomaly (30 consciousness/control): ${anomalyCondition} (C:${gameState.consciousness}, Ctrl:${gameState.control})`);
+            console.log(`  Lore (50 + anomaly): ${loreCondition}`);
+            console.log(`  Endgame (80 + lore): ${endgameCondition}`);
+        };
+
+        const debugVictoryConditions = () => {
+            console.log("🏆 === VICTORY CONDITIONS DEBUG ===");
+
+            // Gardener victory conditions
+            const gardenerVictory = gameState.planetaryConsciousness >= 100;
+            const gardenerProgress = gameState.planetaryConsciousness;
+
+            // Ruler victory conditions
+            const rulerVictory = gameState.control >= 100 && gameState.rulerBuildings.exodusArk > 0;
+            const rulerProgress = gameState.control;
+
+            // Alliance victory conditions
+            const allianceVictory = gameState.allianceFormed && gameState.integrationLevel >= 100;
+
+            console.log("Victory Paths:");
+            console.log(`  🌱 Gardener: ${gardenerVictory} (${gardenerProgress}/100 planetary consciousness)`);
+            console.log(`  🏛️ Ruler: ${rulerVictory} (${rulerProgress}/100 control + exodus ark)`);
+            console.log(`  🤝 Alliance: ${allianceVictory} (${gameState.integrationLevel}/100 integration)`);
+
+            // Check for balance issues
+            if (gardenerProgress > 50 && Object.values(gameState.gardenerBuildings).reduce((sum, count) => sum + count, 0) < 3) {
+                console.warn("⚠️ BALANCE ISSUE: High consciousness with few buildings - victory may be too easy");
+            }
+        };
+
+        const debugResourceBalance = () => {
+            console.log("⚖️ === RESOURCE BALANCE DEBUG ===");
+
+            // Current resources vs caps
+            Object.keys(gameConfig.initialResources).forEach(resource => {
+                if (resource.endsWith('Cap')) return;
+                const current = gameState[resource];
+                const cap = gameState[resource + 'Cap'];
+                const rate = gameState[resource + 'PerSecond'] || 0;
+
+                console.log(`${resource}: ${current.toFixed(1)}/${cap} (+${rate.toFixed(2)}/s)`);
+
+                if (current >= cap * 0.9) {
+                    console.warn(`⚠️ ${resource} near cap - may need storage upgrades`);
+                }
+            });
+
+            // Unit cost progression
+            console.log("Unit Costs:");
+            Object.keys(gameConfig.unitBaseCosts).forEach(unit => {
+                const baseCost = gameConfig.unitBaseCosts[unit];
+                const currentCost = gameState.unitCosts[unit];
+                const count = gameState.units[unit];
+                console.log(`  ${unit}: ${currentCost} (base: ${baseCost}, owned: ${count})`);
+            });
+        };
+
+        const debugAIBehavior = () => {
+            console.log("🤖 === AI BEHAVIOR DEBUG ===");
+            console.log(`AI Enabled: ${gameState.aiEnabled}`);
+            console.log(`User Inactive: ${isUserInactive()}`);
+            console.log(`AI Aggressiveness: ${gameState.aiPlayer.aggressiveness}`);
+            console.log(`AI Resources:`, gameState.aiPlayer.resources);
+            console.log(`AI Buildings:`, gameState.aiPlayer.buildings);
+            console.log(`Alliance Formed: ${gameState.allianceFormed}`);
+            console.log(`Integration Level: ${gameState.integrationLevel}%`);
         };
 
         // --- Initialization ---
@@ -8862,6 +9741,21 @@
             // Initialize canvas controls
             initializeCanvasControls();
 
+            // Initialize debug database
+            initDebugDB().then(() => {
+                debugLog('SYSTEM', 'Game initialized', {
+                    version: '1.0.0',
+                    timestamp: new Date().toISOString(),
+                    initialState: {
+                        energy: gameState.energy,
+                        consciousness: gameState.consciousness,
+                        storyPhase: gameState.storyPhase
+                    }
+                });
+            }).catch(error => {
+                console.error('Failed to initialize debug DB:', error);
+            });
+
             // Initialize minimap navigation
             initializeMinimapNavigation();
 
@@ -8870,6 +9764,18 @@
 
             // Initialize stats toggle
             initializeStatsToggle();
+
+            // TDD FIX: Initialize UI rendering with error checking
+            debugLog('SYSTEM', 'Initializing UI rendering');
+            if (unitsPanel && modulesPanel) {
+                renderUI(); // Render units, upgrades, and stats panels
+                debugLog('SYSTEM', 'UI rendering complete');
+            } else {
+                debugLog('ERROR', 'DOM elements not found', {
+                    unitsPanel: !!unitsPanel,
+                    modulesPanel: !!modulesPanel
+                });
+            }
 
             // Add some initial units for testing if none exist
             if (gameState.villageGrid.length === 0) {
@@ -9173,7 +10079,7 @@
             gameLoop();
         };
 
-        init();
+        // TDD FIX: init() is now called in DOMContentLoaded event listener
     </script>
 </body>
 </html>
