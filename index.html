@@ -10522,11 +10522,30 @@ ${error.stack || error.message}
             log("🔑 Grok API integration ready - key will be requested when needed", "info");
 
             // TDD: Initialize Achievement & Goals System
-            initializeAchievements();
-            initializeGoals();
+            try {
+                console.log('🏆 Initializing achievements...');
+                initializeAchievements();
+                console.log('✅ Achievements initialized');
+            } catch (error) {
+                console.error('❌ Achievements initialization failed:', error);
+            }
+
+            try {
+                console.log('🎯 Initializing goals...');
+                initializeGoals();
+                console.log('✅ Goals initialized');
+            } catch (error) {
+                console.error('❌ Goals initialization failed:', error);
+            }
 
             // Initialize canvas controls
-            initializeCanvasControls();
+            try {
+                console.log('🎮 Initializing canvas controls...');
+                initializeCanvasControls();
+                console.log('✅ Canvas controls initialized');
+            } catch (error) {
+                console.error('❌ Canvas controls initialization failed:', error);
+            }
 
             // Initialize debug database
             initDebugDB().then(() => {
@@ -10870,6 +10889,74 @@ ${error.stack || error.message}
 
             // Set global flag to prevent meta refresh
             window.terraflowLoaded = true;
+
+            console.log('✅ Game initialization completed successfully');
+
+            } catch (error) {
+                console.error('🚨 CRITICAL: Game initialization failed:', error);
+                console.error('Error stack:', error.stack);
+
+                // Try to identify which part failed
+                const errorContext = {
+                    message: error.message,
+                    stack: error.stack,
+                    gameStateExists: !!gameState,
+                    domElementsFound: {
+                        unitsPanel: !!unitsPanel,
+                        modulesPanel: !!modulesPanel,
+                        canvas: !!canvas,
+                        statsBar: !!statsBar
+                    },
+                    timestamp: new Date().toISOString()
+                };
+
+                console.error('Error context:', errorContext);
+
+                // Show user-friendly error
+                if (document.body) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.innerHTML = `
+                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                                    background: linear-gradient(135deg, #8B0000, #4B0000); color: white;
+                                    display: flex; flex-direction: column; justify-content: center;
+                                    align-items: center; font-family: Arial, sans-serif; z-index: 99999;">
+                            <h1 style="font-size: 2.5em; margin-bottom: 20px;">🚨 TerraFlow Crashed</h1>
+                            <p style="margin-bottom: 20px; text-align: center; max-width: 600px; font-size: 1.2em;">
+                                The game encountered a critical error during initialization.
+                            </p>
+                            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <strong>Error:</strong> ${error.message}
+                            </div>
+                            <button onclick="localStorage.clear(); sessionStorage.clear(); location.reload();"
+                                    style="padding: 15px 30px; font-size: 18px; background: #4CAF50;
+                                           color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px;">
+                                🔄 Clear All Data & Restart
+                            </button>
+                            <button onclick="location.reload();"
+                                    style="padding: 15px 30px; font-size: 18px; background: #2196F3;
+                                           color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px;">
+                                🔄 Just Restart
+                            </button>
+                            <details style="margin-top: 20px; max-width: 800px;">
+                                <summary style="cursor: pointer; font-size: 1.1em;">🔍 Technical Details</summary>
+                                <pre style="background: rgba(0,0,0,0.5); padding: 15px; margin-top: 10px;
+                                            font-size: 11px; overflow: auto; max-height: 300px; border-radius: 4px;">
+${JSON.stringify(errorContext, null, 2)}
+                                </pre>
+                            </details>
+                        </div>
+                    `;
+                    document.body.appendChild(errorDiv);
+                }
+
+                // Remove loading indicator
+                if (window.removeLoadingIndicator) {
+                    window.removeLoadingIndicator();
+                }
+
+                // Don't throw the error further - we've handled it
+                return false;
+            }
         };
 
         // TDD FIX: init() is now called in DOMContentLoaded event listener
