@@ -893,7 +893,14 @@
         <div class="p-3 h-full flex">
             <!-- Log Section -->
             <div class="flex-1 flex flex-col mr-3">
-                <h3 class="font-semibold text-base mb-2 text-indigo-200 flex-shrink-0">Aetheric Log</h3>
+                <div class="flex justify-between items-center mb-2 flex-shrink-0">
+                    <h3 class="font-semibold text-base text-indigo-200">Aetheric Log</h3>
+                    <button id="copy-log-btn"
+                            class="px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded transition-colors duration-200"
+                            title="Copy log to clipboard">
+                        📋 Copy
+                    </button>
+                </div>
                 <div id="log-output" class="text-sm text-indigo-300 space-y-1 flex-1 overflow-y-auto pr-2"></div>
             </div>
 
