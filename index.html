@@ -1218,40 +1218,118 @@
 
         // Initialize DOM elements when DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
-            canvas = document.getElementById('village-canvas');
-            ctx = canvas ? canvas.getContext('2d') : null;
-            modulesPanel = document.getElementById('modules-panel');
-            unitsPanel = document.getElementById('units-panel');
-            statsBar = document.getElementById('stats-bar');
-            logOutput = document.getElementById('log-output');
-            seasonalVisionBtn = document.getElementById('seasonal-vision-btn');
-            advisorBtn = document.getElementById('advisor-btn');
+            try {
+                console.log('🚀 DOM Content Loaded - Starting initialization...');
 
-            console.log('DOM elements initialized:', {
-                canvas: !!canvas,
-                modulesPanel: !!modulesPanel,
-                unitsPanel: !!unitsPanel,
-                statsBar: !!statsBar,
-                logOutput: !!logOutput,
-                seasonalVisionBtn: !!seasonalVisionBtn,
-                advisorBtn: !!advisorBtn
-            });
+                // Initialize DOM elements with error checking
+                canvas = document.getElementById('village-canvas');
+                ctx = canvas ? canvas.getContext('2d') : null;
+                modulesPanel = document.getElementById('modules-panel');
+                unitsPanel = document.getElementById('units-panel');
+                statsBar = document.getElementById('stats-bar');
+                logOutput = document.getElementById('log-output');
+                seasonalVisionBtn = document.getElementById('seasonal-vision-btn');
+                advisorBtn = document.getElementById('advisor-btn');
 
-            // Initialize log panel resizing
-            initializeLogPanelResizing();
+                console.log('✅ DOM elements initialized:', {
+                    canvas: !!canvas,
+                    modulesPanel: !!modulesPanel,
+                    unitsPanel: !!unitsPanel,
+                    statsBar: !!statsBar,
+                    logOutput: !!logOutput,
+                    seasonalVisionBtn: !!seasonalVisionBtn,
+                    advisorBtn: !!advisorBtn
+                });
 
-            // Initialize minimap controls
-            initializeMinimapControls();
-
-            // Initialize the game after DOM is ready
-            init();
-
-            // Fallback: remove loading indicator after 2 seconds even if game doesn't fully init
-            setTimeout(() => {
-                if (window.removeLoadingIndicator) {
-                    window.removeLoadingIndicator();
+                // Initialize log panel resizing with error handling
+                try {
+                    console.log('🔧 Initializing log panel resizing...');
+                    initializeLogPanelResizing();
+                    console.log('✅ Log panel resizing initialized');
+                } catch (error) {
+                    console.error('❌ Log panel resizing failed:', error);
                 }
-            }, 2000);
+
+                // Initialize minimap controls with error handling
+                try {
+                    console.log('🗺️ Initializing minimap controls...');
+                    initializeMinimapControls();
+                    console.log('✅ Minimap controls initialized');
+                } catch (error) {
+                    console.error('❌ Minimap controls failed:', error);
+                }
+
+                // Initialize the game after DOM is ready
+                try {
+                    console.log('🎮 Starting game initialization...');
+                    init();
+                    console.log('✅ Game initialization completed');
+                } catch (error) {
+                    console.error('❌ CRITICAL: Game initialization failed:', error);
+
+                    // Show error to user
+                    if (document.body) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.innerHTML = `
+                            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                                        background: rgba(139, 0, 0, 0.9); color: white;
+                                        display: flex; flex-direction: column; justify-content: center;
+                                        align-items: center; font-family: Arial, sans-serif; z-index: 99999;">
+                                <h1 style="font-size: 2em; margin-bottom: 20px;">🚨 TerraFlow Initialization Error</h1>
+                                <p style="margin-bottom: 20px; text-align: center; max-width: 600px;">
+                                    The game failed to initialize properly. Error: ${error.message}
+                                </p>
+                                <button onclick="localStorage.clear(); sessionStorage.clear(); location.reload();"
+                                        style="padding: 15px 30px; font-size: 18px; background: #4CAF50;
+                                               color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                    🔄 Clear Data & Restart
+                                </button>
+                                <details style="margin-top: 20px; max-width: 800px;">
+                                    <summary style="cursor: pointer;">Technical Details</summary>
+                                    <pre style="background: rgba(0,0,0,0.5); padding: 10px; margin-top: 10px;
+                                                font-size: 12px; overflow: auto; max-height: 200px;">
+${error.stack || error.message}
+                                    </pre>
+                                </details>
+                            </div>
+                        `;
+                        document.body.appendChild(errorDiv);
+                    }
+
+                    // Also try to clear corrupted data automatically
+                    setTimeout(() => {
+                        console.log('🔄 Auto-clearing data due to initialization failure...');
+                        try {
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            location.reload();
+                        } catch (e) {
+                            console.error('Failed to auto-clear:', e);
+                        }
+                    }, 5000);
+                }
+
+                // Fallback: remove loading indicator after 2 seconds even if game doesn't fully init
+                setTimeout(() => {
+                    if (window.removeLoadingIndicator) {
+                        window.removeLoadingIndicator();
+                    }
+                }, 2000);
+
+            } catch (error) {
+                console.error('🚨 CRITICAL: DOMContentLoaded handler failed:', error);
+
+                // Nuclear option - clear everything and reload
+                setTimeout(() => {
+                    try {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        location.reload();
+                    } catch (e) {
+                        console.error('Nuclear option failed:', e);
+                    }
+                }, 1000);
+            }
         });
 
         // --- Log Panel Resizing Functionality ---
@@ -10425,8 +10503,13 @@
 
         // --- Initialization ---
         const init = () => {
-            // Try to load saved game first
-            const loadedSave = loadGameState();
+            try {
+                console.log('🚀 Starting game initialization...');
+
+                // Try to load saved game first
+                console.log('📁 Loading saved game state...');
+                const loadedSave = loadGameState();
+                console.log('✅ Game state loaded:', !!loadedSave);
 
             if (!loadedSave) {
                 log("🌟 Welcome to The Great Transition. Humanity stands at a crossroads between Control and Consciousness.", "success");
