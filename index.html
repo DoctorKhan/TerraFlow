@@ -54,6 +54,33 @@
         .log-panel:hover::after {
             background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.8), transparent);
         }
+
+        /* Minimap styling */
+        #minimap-container {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        #minimap-container.transparent {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        #minimap-container.collapsed #minimap-content {
+            display: none;
+        }
+
+        #minimap-container.dragging {
+            cursor: grabbing !important;
+            z-index: 100;
+        }
+
+        #minimap-header {
+            user-select: none;
+        }
+
+        #minimap-header:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
         canvas {
             border-radius: 0.75rem;
         }
@@ -739,11 +766,30 @@
 
 
 
-                <!-- Minimap -->
-                <div class="absolute left-2 bg-black bg-opacity-70 border border-gray-600 rounded z-50" style="bottom: 210px;">
-                    <div class="text-xs text-gray-400 px-2 py-1 border-b border-gray-600">Minimap</div>
-                    <canvas id="minimap-canvas" width="120" height="90" class="block"></canvas>
+                <!-- Minimap - Enhanced with visibility controls -->
+                <div id="minimap-container" class="absolute left-2 bg-black border border-gray-600 rounded z-50 transition-all duration-300" style="bottom: 210px;">
+                    <!-- Minimap Header with Controls -->
+                    <div class="text-xs text-gray-400 px-2 py-1 border-b border-gray-600 flex justify-between items-center cursor-move" id="minimap-header">
+                        <span>Minimap</span>
+                        <div class="flex space-x-1">
+                            <!-- Transparency Toggle -->
+                            <button id="minimap-transparency-btn" class="text-gray-400 hover:text-white text-xs" title="Toggle transparency">◐</button>
+                            <!-- Collapse/Expand Toggle -->
+                            <button id="minimap-collapse-btn" class="text-gray-400 hover:text-white text-xs" title="Collapse/Expand">−</button>
+                            <!-- Hide/Show Toggle -->
+                            <button id="minimap-hide-btn" class="text-gray-400 hover:text-white text-xs" title="Hide minimap">×</button>
+                        </div>
+                    </div>
+                    <!-- Minimap Content -->
+                    <div id="minimap-content">
+                        <canvas id="minimap-canvas" width="120" height="90" class="block"></canvas>
+                    </div>
                 </div>
+
+                <!-- Minimap Show Button (when hidden) -->
+                <button id="minimap-show-btn" class="absolute left-2 bg-black bg-opacity-70 border border-gray-600 rounded z-50 px-2 py-1 text-xs text-gray-400 hover:text-white hidden transition-all duration-300" style="bottom: 210px;" title="Show minimap">
+                    📍 Map
+                </button>
             </div>
         </main>
 
@@ -837,6 +883,9 @@
 
             // Initialize log panel resizing
             initializeLogPanelResizing();
+
+            // Initialize minimap controls
+            initializeMinimapControls();
 
             // Initialize the game after DOM is ready
             init();
@@ -938,6 +987,144 @@
             });
 
             console.log('Log panel resizing initialized');
+        };
+
+        // --- Minimap Controls Functionality ---
+        const initializeMinimapControls = () => {
+            const minimapContainer = document.getElementById('minimap-container');
+            const minimapContent = document.getElementById('minimap-content');
+            const minimapHeader = document.getElementById('minimap-header');
+            const transparencyBtn = document.getElementById('minimap-transparency-btn');
+            const collapseBtn = document.getElementById('minimap-collapse-btn');
+            const hideBtn = document.getElementById('minimap-hide-btn');
+            const showBtn = document.getElementById('minimap-show-btn');
+
+            if (!minimapContainer) return;
+
+            // Load saved settings
+            const savedSettings = {
+                visible: localStorage.getItem('terraflow_minimap_visible') !== 'false',
+                collapsed: localStorage.getItem('terraflow_minimap_collapsed') === 'true',
+                transparent: localStorage.getItem('terraflow_minimap_transparent') === 'true',
+                position: JSON.parse(localStorage.getItem('terraflow_minimap_position') || '{"bottom": "210px", "left": "8px"}')
+            };
+
+            // Apply saved settings
+            if (!savedSettings.visible) {
+                minimapContainer.style.display = 'none';
+                showBtn.classList.remove('hidden');
+            }
+
+            if (savedSettings.collapsed) {
+                minimapContainer.classList.add('collapsed');
+                collapseBtn.textContent = '+';
+                collapseBtn.title = 'Expand';
+            }
+
+            if (savedSettings.transparent) {
+                minimapContainer.classList.add('transparent');
+                transparencyBtn.textContent = '◑';
+            }
+
+            // Apply saved position
+            minimapContainer.style.bottom = savedSettings.position.bottom;
+            minimapContainer.style.left = savedSettings.position.left;
+            showBtn.style.bottom = savedSettings.position.bottom;
+            showBtn.style.left = savedSettings.position.left;
+
+            // Transparency toggle
+            transparencyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isTransparent = minimapContainer.classList.toggle('transparent');
+                transparencyBtn.textContent = isTransparent ? '◑' : '◐';
+                localStorage.setItem('terraflow_minimap_transparent', isTransparent);
+            });
+
+            // Collapse/Expand toggle
+            collapseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isCollapsed = minimapContainer.classList.toggle('collapsed');
+                collapseBtn.textContent = isCollapsed ? '+' : '−';
+                collapseBtn.title = isCollapsed ? 'Expand' : 'Collapse';
+                localStorage.setItem('terraflow_minimap_collapsed', isCollapsed);
+            });
+
+            // Hide minimap
+            hideBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                minimapContainer.style.display = 'none';
+                showBtn.classList.remove('hidden');
+                localStorage.setItem('terraflow_minimap_visible', 'false');
+            });
+
+            // Show minimap
+            showBtn.addEventListener('click', () => {
+                minimapContainer.style.display = 'block';
+                showBtn.classList.add('hidden');
+                localStorage.setItem('terraflow_minimap_visible', 'true');
+            });
+
+            // Dragging functionality
+            let isDragging = false;
+            let dragOffset = { x: 0, y: 0 };
+
+            const startDrag = (e) => {
+                if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking buttons
+
+                isDragging = true;
+                minimapContainer.classList.add('dragging');
+
+                const rect = minimapContainer.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+
+                document.addEventListener('mousemove', doDrag);
+                document.addEventListener('mouseup', stopDrag);
+                e.preventDefault();
+            };
+
+            const doDrag = (e) => {
+                if (!isDragging) return;
+
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const containerRect = minimapContainer.getBoundingClientRect();
+
+                // Calculate new position
+                let newLeft = e.clientX - dragOffset.x;
+                let newBottom = viewportHeight - (e.clientY - dragOffset.y + containerRect.height);
+
+                // Constrain to viewport
+                newLeft = Math.max(0, Math.min(viewportWidth - containerRect.width, newLeft));
+                newBottom = Math.max(0, Math.min(viewportHeight - containerRect.height, newBottom));
+
+                minimapContainer.style.left = newLeft + 'px';
+                minimapContainer.style.bottom = newBottom + 'px';
+                showBtn.style.left = newLeft + 'px';
+                showBtn.style.bottom = newBottom + 'px';
+            };
+
+            const stopDrag = () => {
+                if (!isDragging) return;
+
+                isDragging = false;
+                minimapContainer.classList.remove('dragging');
+
+                // Save position
+                const position = {
+                    left: minimapContainer.style.left,
+                    bottom: minimapContainer.style.bottom
+                };
+                localStorage.setItem('terraflow_minimap_position', JSON.stringify(position));
+
+                document.removeEventListener('mousemove', doDrag);
+                document.removeEventListener('mouseup', stopDrag);
+            };
+
+            // Add drag event listeners
+            minimapHeader.addEventListener('mousedown', startDrag);
+
+            console.log('Minimap controls initialized');
         };
 
         // --- TDD: Centralized Game State Initialization ---
