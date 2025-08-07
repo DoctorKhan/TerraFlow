@@ -949,8 +949,42 @@
     </div>
 
     <script>
+        // --- DEBUG MODE: Disable storage operations ---
+        const DEBUG_MODE = window.location.search.includes('debug=true') || window.location.search.includes('nostorage=true');
+
+        if (DEBUG_MODE) {
+            console.log('🔧 DEBUG MODE: Storage operations disabled');
+
+            // Mock localStorage to prevent crashes
+            window.localStorage = {
+                getItem: () => null,
+                setItem: () => {},
+                removeItem: () => {},
+                clear: () => {},
+                key: () => null,
+                length: 0
+            };
+
+            // Mock sessionStorage to prevent crashes
+            window.sessionStorage = {
+                getItem: () => null,
+                setItem: () => {},
+                removeItem: () => {},
+                clear: () => {},
+                key: () => null,
+                length: 0
+            };
+
+            console.log('✅ Storage mocked successfully');
+        }
+
         // --- IMMEDIATE NUCLEAR OPTION: Clear data BEFORE any other code runs ---
         (function() {
+            if (DEBUG_MODE) {
+                console.log('🔧 Skipping storage clearing in debug mode');
+                return;
+            }
+
             // Check if we've been here before (prevent infinite loops)
             const resetCount = parseInt(sessionStorage.getItem('terraflow_reset_count') || '0');
             const lastReset = parseInt(sessionStorage.getItem('terraflow_last_reset') || '0');
@@ -1241,22 +1275,30 @@
                     advisorBtn: !!advisorBtn
                 });
 
-                // Initialize log panel resizing with error handling
-                try {
-                    console.log('🔧 Initializing log panel resizing...');
-                    initializeLogPanelResizing();
-                    console.log('✅ Log panel resizing initialized');
-                } catch (error) {
-                    console.error('❌ Log panel resizing failed:', error);
+                // Initialize log panel resizing with error handling (skip in debug mode)
+                if (!DEBUG_MODE) {
+                    try {
+                        console.log('🔧 Initializing log panel resizing...');
+                        initializeLogPanelResizing();
+                        console.log('✅ Log panel resizing initialized');
+                    } catch (error) {
+                        console.error('❌ Log panel resizing failed:', error);
+                    }
+                } else {
+                    console.log('🔧 Skipping log panel resizing in debug mode');
                 }
 
-                // Initialize minimap controls with error handling
-                try {
-                    console.log('🗺️ Initializing minimap controls...');
-                    initializeMinimapControls();
-                    console.log('✅ Minimap controls initialized');
-                } catch (error) {
-                    console.error('❌ Minimap controls failed:', error);
+                // Initialize minimap controls with error handling (skip in debug mode)
+                if (!DEBUG_MODE) {
+                    try {
+                        console.log('🗺️ Initializing minimap controls...');
+                        initializeMinimapControls();
+                        console.log('✅ Minimap controls initialized');
+                    } catch (error) {
+                        console.error('❌ Minimap controls failed:', error);
+                    }
+                } else {
+                    console.log('🔧 Skipping minimap controls in debug mode');
                 }
 
                 // Initialize the game after DOM is ready
@@ -10505,11 +10547,22 @@ ${error.stack || error.message}
         const init = () => {
             try {
                 console.log('🚀 Starting game initialization...');
+                console.log('🔧 Debug mode:', DEBUG_MODE);
 
-                // Try to load saved game first
-                console.log('📁 Loading saved game state...');
-                const loadedSave = loadGameState();
-                console.log('✅ Game state loaded:', !!loadedSave);
+                // Try to load saved game first (skip in debug mode)
+                let loadedSave = false;
+                if (!DEBUG_MODE) {
+                    console.log('📁 Loading saved game state...');
+                    loadedSave = loadGameState();
+                    console.log('✅ Game state loaded:', !!loadedSave);
+                } else {
+                    console.log('🔧 Skipping save game loading in debug mode');
+                }
+
+            if (DEBUG_MODE) {
+                log("🔧 DEBUG MODE ACTIVE - Storage disabled, features limited", "warning");
+                log("🔧 To exit debug mode, remove ?debug=true or ?nostorage=true from URL", "info");
+            }
 
             if (!loadedSave) {
                 log("🌟 Welcome to The Great Transition. Humanity stands at a crossroads between Control and Consciousness.", "success");
@@ -10519,23 +10572,31 @@ ${error.stack || error.message}
                 log("🌟 Welcome back to The Great Transition. Your journey continues...", "success");
             }
 
-            log("🔑 Grok API integration ready - key will be requested when needed", "info");
-
-            // TDD: Initialize Achievement & Goals System
-            try {
-                console.log('🏆 Initializing achievements...');
-                initializeAchievements();
-                console.log('✅ Achievements initialized');
-            } catch (error) {
-                console.error('❌ Achievements initialization failed:', error);
+            if (!DEBUG_MODE) {
+                log("🔑 Grok API integration ready - key will be requested when needed", "info");
+            } else {
+                log("🔧 Grok API disabled in debug mode", "info");
             }
 
-            try {
-                console.log('🎯 Initializing goals...');
-                initializeGoals();
-                console.log('✅ Goals initialized');
-            } catch (error) {
-                console.error('❌ Goals initialization failed:', error);
+            // TDD: Initialize Achievement & Goals System (skip in debug mode)
+            if (!DEBUG_MODE) {
+                try {
+                    console.log('🏆 Initializing achievements...');
+                    initializeAchievements();
+                    console.log('✅ Achievements initialized');
+                } catch (error) {
+                    console.error('❌ Achievements initialization failed:', error);
+                }
+
+                try {
+                    console.log('🎯 Initializing goals...');
+                    initializeGoals();
+                    console.log('✅ Goals initialized');
+                } catch (error) {
+                    console.error('❌ Goals initialization failed:', error);
+                }
+            } else {
+                console.log('🔧 Skipping achievements and goals in debug mode');
             }
 
             // Initialize canvas controls
@@ -10547,20 +10608,24 @@ ${error.stack || error.message}
                 console.error('❌ Canvas controls initialization failed:', error);
             }
 
-            // Initialize debug database
-            initDebugDB().then(() => {
-                debugLog('SYSTEM', 'Game initialized', {
-                    version: '1.0.0',
-                    timestamp: new Date().toISOString(),
-                    initialState: {
-                        energy: gameState.energy,
-                        consciousness: gameState.consciousness,
-                        storyPhase: gameState.storyPhase
-                    }
+            // Initialize debug database (skip in debug mode)
+            if (!DEBUG_MODE) {
+                initDebugDB().then(() => {
+                    debugLog('SYSTEM', 'Game initialized', {
+                        version: '1.0.0',
+                        timestamp: new Date().toISOString(),
+                        initialState: {
+                            energy: gameState.energy,
+                            consciousness: gameState.consciousness,
+                            storyPhase: gameState.storyPhase
+                        }
+                    });
+                }).catch(error => {
+                    console.error('Failed to initialize debug DB:', error);
                 });
-            }).catch(error => {
-                console.error('Failed to initialize debug DB:', error);
-            });
+            } else {
+                console.log('🔧 Skipping debug database in debug mode');
+            }
 
             // Initialize minimap navigation
             initializeMinimapNavigation();
@@ -10642,21 +10707,25 @@ ${error.stack || error.message}
             };
             updateAutoSaveButton();
 
-            // Start auto-save system
-            startAutoSave();
+            // Start auto-save system (skip in debug mode)
+            if (!DEBUG_MODE) {
+                startAutoSave();
 
-            // Save on page unload to prevent data loss
-            window.addEventListener('beforeunload', (e) => {
-                saveGameState();
-                // Don't show confirmation dialog for normal saves
-            });
-
-            // Save when page becomes hidden (mobile/tab switching)
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
+                // Save on page unload to prevent data loss
+                window.addEventListener('beforeunload', (e) => {
                     saveGameState();
-                }
-            });
+                    // Don't show confirmation dialog for normal saves
+                });
+
+                // Save when page becomes hidden (mobile/tab switching)
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        saveGameState();
+                    }
+                });
+            } else {
+                console.log('🔧 Skipping auto-save system in debug mode');
+            }
 
             // TDD API Key Popup Event Listeners
             const saveKeyBtn = document.getElementById('save-api-key');
