@@ -856,6 +856,73 @@
     </div>
 
     <script>
+        // --- CRITICAL FIX: Handle Corrupted Save Data ---
+        const clearAllTerraFlowData = () => {
+            try {
+                // Clear all possible TerraFlow localStorage keys
+                const keysToRemove = [
+                    'terraflow_save_data',
+                    'terraflow_save',
+                    'terraflow_achievements',
+                    'terraflow_goals',
+                    'terraflow_log_panel_height',
+                    'terraflow_minimap_visible',
+                    'terraflow_minimap_collapsed',
+                    'terraflow_minimap_transparent',
+                    'terraflow_minimap_position',
+                    'debug_mode'
+                ];
+
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+
+                console.log('🔄 All TerraFlow data cleared from localStorage');
+                return true;
+            } catch (error) {
+                console.error('❌ Error clearing localStorage:', error);
+                return false;
+            }
+        };
+
+        // --- Emergency Recovery: Clear data if URL has ?reset parameter ---
+        if (window.location.search.includes('reset=true')) {
+            clearAllTerraFlowData();
+            console.log('🚨 Emergency reset triggered via URL parameter');
+            // Remove the reset parameter and reload
+            const url = new URL(window.location);
+            url.searchParams.delete('reset');
+            window.history.replaceState({}, document.title, url.pathname);
+        }
+
+        // --- Global Error Handler ---
+        window.addEventListener('error', (event) => {
+            console.error('🚨 Global error caught:', event.error);
+            console.error('Error details:', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                stack: event.error?.stack
+            });
+
+            // If it's a critical error, offer to reset
+            if (event.error?.message?.includes('localStorage') ||
+                event.error?.message?.includes('JSON') ||
+                event.error?.message?.includes('gameState')) {
+                console.log('🔄 Critical error detected - data corruption likely');
+
+                if (confirm('🚨 TerraFlow encountered a critical error, likely due to corrupted save data.\n\nWould you like to reset and start fresh?\n\n(Click OK to reset, Cancel to try continuing)')) {
+                    clearAllTerraFlowData();
+                    location.reload(true);
+                }
+            }
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('🚨 Unhandled promise rejection:', event.reason);
+        });
+
         // --- Canvas & DOM Elements ---
         // TDD FIX: Initialize DOM elements when DOM is ready
         let canvas, ctx, modulesPanel, unitsPanel, statsBar, logOutput, seasonalVisionBtn, advisorBtn;
@@ -1001,12 +1068,20 @@
 
             if (!minimapContainer) return;
 
-            // Load saved settings
+            // Load saved settings with error handling
+            let minimapPosition;
+            try {
+                minimapPosition = JSON.parse(localStorage.getItem('terraflow_minimap_position') || '{"bottom": "210px", "left": "8px"}');
+            } catch (error) {
+                console.warn('Invalid minimap position data, using defaults');
+                minimapPosition = {"bottom": "210px", "left": "8px"};
+            }
+
             const savedSettings = {
                 visible: localStorage.getItem('terraflow_minimap_visible') !== 'false',
                 collapsed: localStorage.getItem('terraflow_minimap_collapsed') === 'true',
                 transparent: localStorage.getItem('terraflow_minimap_transparent') === 'true',
-                position: JSON.parse(localStorage.getItem('terraflow_minimap_position') || '{"bottom": "210px", "left": "8px"}')
+                position: minimapPosition
             };
 
             // Apply saved settings
@@ -8475,17 +8550,22 @@
         const startNewGame = () => {
             if (confirm('🔄 Start a completely new game?\n\nThis will:\n• Clear all saved progress\n• Reset all resources to starting values\n• Remove all buildings and units\n• Reset story progression\n\nThis cannot be undone!')) {
 
-                // Clear all localStorage data
-                localStorage.removeItem('terraflow_save_data');
-                localStorage.removeItem('terraflow_save');
-                localStorage.removeItem('terraflow_achievements');
-                localStorage.removeItem('terraflow_goals');
+                console.log('🔄 Starting new game - clearing all data...');
 
-                log('🔄 Clearing saved data and restarting...', 'info');
+                // Use the comprehensive clear function
+                const cleared = clearAllTerraFlowData();
+
+                if (cleared) {
+                    console.log('✅ All data cleared successfully');
+                } else {
+                    console.warn('⚠️ Some data may not have been cleared');
+                }
+
+                console.log('🔄 Reloading page to start fresh...');
 
                 // Reload the page to start completely fresh
                 setTimeout(() => {
-                    location.reload();
+                    location.reload(true); // Force reload from server
                 }, 500);
             }
         };
@@ -8584,11 +8664,28 @@
             try {
                 const savedData = localStorage.getItem(SAVE_KEY);
                 if (!savedData) {
-                    log('📁 No saved game found. Starting fresh!', 'info');
+                    console.log('📁 No saved game found. Starting fresh!');
                     return false;
                 }
 
-                const saveData = JSON.parse(savedData);
+                // CRITICAL FIX: Validate JSON before parsing
+                let saveData;
+                try {
+                    saveData = JSON.parse(savedData);
+                } catch (parseError) {
+                    console.error('❌ Corrupted save data detected:', parseError);
+                    console.log('🔄 Clearing corrupted save and starting fresh...');
+                    clearAllTerraFlowData();
+                    return false;
+                }
+
+                // Validate save data structure
+                if (!saveData || typeof saveData !== 'object' || !saveData.gameState) {
+                    console.error('❌ Invalid save data structure');
+                    console.log('🔄 Clearing invalid save and starting fresh...');
+                    clearAllTerraFlowData();
+                    return false;
+                }
 
                 // Check save version compatibility
                 if (!saveData.version || saveData.version !== CURRENT_SAVE_VERSION) {
@@ -8676,8 +8773,10 @@
                 log(`💾 Game progress loaded! (Saved ${saveAge} minutes ago)`, 'success');
                 return true;
             } catch (error) {
-                console.error('Failed to load game:', error);
-                log('❌ Failed to load saved game. Starting fresh.', 'error');
+                console.error('❌ Critical error loading game state:', error);
+                console.log('🔄 Clearing potentially corrupted save data...');
+                clearAllTerraFlowData();
+                console.log('❌ Failed to load saved game. Starting fresh.');
                 return false;
             }
         };
